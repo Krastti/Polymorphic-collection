@@ -101,6 +101,12 @@ static int c_equals(const void* a, const void* b, double eps)
             fabs(c1->imag - c2->imag) < eps) ? 1 : 0;
 }
 
+static void* c_one(void) {
+    Complex* one = malloc(sizeof(Complex));
+    if (one) { one->real = 1.0; one->imag = 0.0; }
+    return one;
+}
+
 static FieldInfo* instance = NULL;
 
 const FieldInfo* get_complex_type_info(void) {
@@ -110,6 +116,7 @@ const FieldInfo* get_complex_type_info(void) {
             instance->size = sizeof(Complex);
             instance->clone = c_clone;
             instance->zero = c_zero;
+            instance->one = c_one;
             instance->destroy = c_destroy;
             instance->print = c_print;
             instance->sum = c_sum;

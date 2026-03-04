@@ -12,6 +12,7 @@ typedef struct {
     void* (*clone)(const void* src);      // Копирование
     void  (*destroy)(void* elem);         // Удаление
     void* (*zero)(void);                  // Создание нейтрального элемента
+    void* (*one)(void);
 
     void (*print)(const void* elem);      // Вывод
     void (*sum)(const void* a, const void* b, void* res);  // Сложение

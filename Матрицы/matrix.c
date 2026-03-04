@@ -35,7 +35,7 @@ Matrix* matrix_create(size_t n, const FieldInfo* type)
     }
 
     // Заполнение матрицы нулями
-    void* zero = type->clone(&(double){0.0});
+    void* zero = type->zero();
     for (size_t i = 0; i < n * n; i++)
     {
         matrix->data[i] = type->clone(zero);

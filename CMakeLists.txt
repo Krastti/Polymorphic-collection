@@ -3,6 +3,10 @@ project(LaboratoryWork1 C)
 
 set(CMAKE_C_STANDARD 11)
 
+if(MINGW)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc")
+endif()
+
 add_executable(LaboratoryWork1 main.c
         "Типы данных/double_types.c"
         "Типы данных/double_types.h"
@@ -18,4 +22,7 @@ add_executable(LaboratoryWork1 main.c
         Меню/menu.c
         LU-разложение/lu_decomposition.h
         LU-разложение/lu_decomposition.c
+        LU-разложение/lu_benchmark.h
+        LU-разложение/lu_benchmark.c
+        LU-разложение/lu_benchmark_plot.c
 )

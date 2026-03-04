@@ -20,9 +20,4 @@ int matrix_lu_decompose(const Matrix* A, Matrix** L, Matrix** U);
 
 // epsilon - Допустимая погрешность
 int matrix_lu_verify(const Matrix* A, const Matrix* L, const Matrix* U, double epsilon);
-
-// b - вектор правой части
-// x - выходной вектор решения
-int matrix_lu_solve(const Matrix* A, const Matrix* b, Matrix** x);
-
 #endif //LABORATORYWORK1_LU_DECOMPOSITION_H

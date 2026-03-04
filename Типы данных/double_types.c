@@ -20,6 +20,13 @@ static void* d_zero(void)
     return zero;
 }
 
+static void* d_one(void)
+{
+    double* one = malloc(sizeof(double));
+    if (one) *one = 1.0;
+    return one;
+}
+
 static void d_destroy(void* elem) { free(elem); }
 
 static void d_print(const void* elem)
@@ -72,6 +79,7 @@ const FieldInfo* get_double_type_info(void) {
             instance->size = sizeof(double);
             instance->clone = d_clone;
             instance->zero = d_zero;
+            instance->one = d_one;
             instance->destroy = d_destroy;
             instance->print = d_print;
             instance->sum = d_sum;
