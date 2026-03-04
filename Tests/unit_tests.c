@@ -3,7 +3,7 @@
 //
 #include  "../Типы данных/double_types.h"
 #include  "../Типы данных/complex_types.h"
-#include  "../Матрицы/matrix.h"
+#include  "../Matrix/matrix.h"
 
 #include <math.h>
 #include <stdio.h>

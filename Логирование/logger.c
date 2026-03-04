@@ -12,6 +12,7 @@
 static FILE* _log_file = NULL;
 static LogLevel _current_level = LOG_INFO;
 static bool _initialized = false;
+static bool _log_to_console = false;
 
 static const char* _level_to_string(LogLevel level) {
     switch (level) {
@@ -82,16 +83,21 @@ void _log_write(LogLevel level, const char* file, int line, char* format, ...)
     char header[256];
     snprintf(header, sizeof(header), "%s [%s] %s:%d ", timestamp, _level_to_string(level), filename, line);
 
-    FILE* out = (level >= LOG_WARN) ? stderr : stdout;
-    fprintf(out, "%s", header);
-
     va_list args;
     va_start(args, format);
-    vfprintf(out, format, args);
-    va_end(args);
+    if (_log_to_console)
+    {
+        FILE* out = (level >= LOG_WARN) ? stderr : stdout;
+        fprintf(out, "%s", header);
 
-    fprintf(out, "\n");
-    fflush(out);
+        va_list args_copy;
+        va_copy(args_copy, args);
+        vfprintf(out, format, args_copy);
+        va_end(args_copy);
+
+        fprintf(out, "\n");
+        fflush(out);
+    }
 
     if (_log_file != NULL)
     {
@@ -102,8 +108,13 @@ void _log_write(LogLevel level, const char* file, int line, char* format, ...)
         fprintf(_log_file, "\n");
         fflush(_log_file);
     }
+    va_end(args);
 }
 
 LogLevel logger_get_level(void) {
     return _current_level;
+}
+
+void logger_enable_console(bool enable) {
+    _log_to_console = enable;
 }

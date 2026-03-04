@@ -1,17 +1,17 @@
 //
 // Created by Krastti on 04.03.2026.
 //
-
 #ifndef LABORATORYWORK1_MENU_H
 #define LABORATORYWORK1_MENU_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include "../Логирование/logger.h"
 
-#define MENU_TITLE "ЛАБОРАТОРНАЯ РАБОТА №1. ВАРИАНТ 12"
+#define MENU_TITLE "ЛАБОРАТОРНАЯ РАБОТА №1"
 #define MENU_SUBTITLE "Полиморфная коллекция: Квадратная матрица"
-
 #define MENU_EXIT             0
 #define MENU_SELECT_TYPE      1
 #define MENU_CREATE_MATRIX_A  2
@@ -25,12 +25,20 @@
 
 #define INPUT_BUFFER_SIZE 256
 
+// Режимы работы программы
+#define MODE_EXIT 0
+#define MODE_INTERACTIVE  1
+#define MODE_TESTING      2
+#define MODE_WEB_INTERFACE 3
+
+bool menu_init(void);
+void menu_cleanup(void);
+
+int menuSelectMode(void);
+
 void printHeader(void);
-
 void printMainMenu(void);
-
 void printSeparator(void);
-
 void clearInputBuffer(void);
 
 // prompt - текст запроса
@@ -45,8 +53,10 @@ int menuSelectElementType(void);
 // imag_out - указатель для мнимой части
 int menuInputScalar(int type, double* real_out, double* imag_out);
 
-void printError(const char* message);
+int readMatrixSize(const char* prompt, size_t* value);
 
+void printError(const char* message);
 void printInfo(const char* message);
+void printWarning(const char* message);
 
 #endif //LABORATORYWORK1_MENU_H

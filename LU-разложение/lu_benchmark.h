@@ -5,7 +5,7 @@
 #ifndef LABORATORYWORK1_LU_BENCHMARK_H
 #define LABORATORYWORK1_LU_BENCHMARK_H
 
-#include "../Матрицы/matrix.h"
+#include "../Matrix/matrix.h"
 #include <time.h>
 
 #define LU_DOOLITTLE 0  // L имеет единицы на диагонали

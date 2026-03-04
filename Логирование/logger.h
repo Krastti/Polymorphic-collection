@@ -23,6 +23,8 @@ void logger_set_level(LogLevel level);
 
 void _log_write(LogLevel level, const char* file, int line, char* format, ...);
 
+void logger_enable_console(bool enable);
+
 LogLevel log_get_level(void);
 
 #define LOG_DEBUG(fmt, ...) _log_write(LOG_DEBUG, __FILE__, __LINE__, fmt, ##__VA_ARGS__)

@@ -5,7 +5,7 @@
 #ifndef LABORATORYWORK1_LU_DECOMPOSITION_H
 #define LABORATORYWORK1_LU_DECOMPOSITION_H
 
-#include "../Матрицы/matrix.h"
+#include "../Matrix/matrix.h"
 
 #define LU_SUCCESS          0
 #define LU_NULL_POINTER    -1
