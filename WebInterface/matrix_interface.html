@@ -168,7 +168,6 @@
 <body>
 <div class="container">
     <h1>🧮 Матричный Калькулятор</h1>
-    <p class="subtitle">Лабораторная работа №1 | Вариант 12 | Квадратная матрица</p>
     <p class="subtitle" id="element-type">Тип элементов: <strong>Загрузка...</strong></p>
 
     <div id="message-container"></div>
@@ -199,6 +198,7 @@
         <div class="operations-buttons">
             <button class="btn btn-info" onclick="onAdd()">A + B (Сложение)</button>
             <button class="btn btn-info" onclick="onMultiply()">A × B (Умножение)</button>
+            <button class="btn btn-info" onclick="onLUDecompose()">🔢 LU-Разложение</button>
         </div>
 
         <h3 style="margin-top: 20px;">Умножение на скаляр</h3>
@@ -228,46 +228,10 @@
 </div>
 
 <script>
-    // Конфигурация - будет установлена при загрузке
-    let ELEMENT_TYPE = 1; // 1 = вещественные, 2 = комплексные
-    let IS_COMPLEX = false;
-
-    // Состояние приложения
     let matrixA = null;
     let matrixB = null;
     let matrixSize = 2;
 
-    // Класс комплексного числа
-    class Complex {
-        constructor(real, imag = 0) {
-            this.real = real;
-            this.imag = imag;
-        }
-        add(other) {
-            return new Complex(this.real + other.real, this.imag + other.imag);
-        }
-        multiply(other) {
-            return new Complex(
-                this.real * other.real - this.imag * other.imag,
-                this.real * other.imag + this.imag * other.real
-            );
-        }
-        multiplyScalar(scalar) {
-            if (scalar instanceof Complex) {
-                return this.multiply(scalar);
-            }
-            return new Complex(this.real * scalar, this.imag * scalar);
-        }
-        toString() {
-            if (this.imag >= 0) {
-                return `${this.real.toFixed(2)} + ${this.imag.toFixed(2)}i`;
-            } else {
-                return `${this.real.toFixed(2)} - ${Math.abs(this.imag).toFixed(2)}i`;
-            }
-        }
-    }
-
-    // Класс матрицы
     class Matrix {
         constructor(size) {
             this.size = size;
@@ -286,6 +250,20 @@
 
         get(row, col) {
             return this.data[row][col];
+        }
+
+        clone() {
+            const cloned = new Matrix(this.size);
+            for (let i = 0; i < this.size; i++) {
+                for (let j = 0; j < this.size; j++) {
+                    if (IS_COMPLEX) {
+                        cloned.data[i][j] = this.data[i][j].clone();
+                    } else {
+                        cloned.data[i][j] = this.data[i][j];
+                    }
+                }
+            }
+            return cloned;
         }
 
         add(other) {
@@ -333,14 +311,119 @@
             const result = new Matrix(this.size);
             for (let i = 0; i < this.size; i++) {
                 for (let j = 0; j < this.size; j++) {
-                    result.data[i][j] = this.data[i][j].multiplyScalar(scalar);
+                    result.data[i][j] = this.data[i][j] * scalar;
                 }
             }
             return result;
         }
+
+        luDecompose() {
+            if (this.size === 0) {
+                return { success: false, error: 'Размер матрицы равен 0', L: null, U: null };
+            }
+
+            const n = this.size;
+            const L = new Matrix(n);
+            const U = new Matrix(n);
+
+            // Инициализация L (единицы на диагонали) и U (нули)
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    if (IS_COMPLEX) {
+                        if (i === j) {
+                            L.set(i, j, new Complex(1, 0));
+                        } else {
+                            L.set(i, j, new Complex(0, 0));
+                        }
+                        U.set(i, j, new Complex(0, 0));
+                    } else {
+                        if (i === j) {
+                            L.set(i, j, 1);
+                        } else {
+                            L.set(i, j, 0);
+                        }
+                        U.set(i, j, 0);
+                    }
+                }
+            }
+
+            // Основной цикл разложения
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    let sum = IS_COMPLEX ? new Complex(0, 0) : 0;
+
+                    // Вычисление суммы произведений
+                    for (let k = 0; k < i; k++) {
+                        const l_ik = L.get(i, k);
+                        const u_kj = U.get(k, j);
+                        const product = IS_COMPLEX
+                            ? l_ik.multiply(u_kj)
+                            : l_ik * u_kj;
+
+                        if (IS_COMPLEX) {
+                            sum = sum.add(product);
+                        } else {
+                            sum += product;
+                        }
+                    }
+
+                    const a_ij = this.get(i, j);
+
+                    // sum = a_ij - sum
+                    if (IS_COMPLEX) {
+                        sum = a_ij.subtract(sum);
+                    } else {
+                        sum = a_ij - sum;
+                    }
+
+                    if (j >= i) {
+                        U.set(i, j, sum);
+                    } else {
+                        const u_jj = U.get(j, j);
+
+                        // Проверка на ноль на диагонали
+                        if (IS_COMPLEX) {
+                            if (u_jj.isZero()) {
+                                return {
+                                    success: false,
+                                    error: `Сингулярная матрица: ноль на диагонали U[${j}][${j}]`,
+                                    L: null,
+                                    U: null
+                                };
+                            }
+                            const divResult = sum.divide(u_jj);
+                            if (divResult === null) {
+                                return {
+                                    success: false,
+                                    error: 'Ошибка деления при вычислении L',
+                                    L: null,
+                                    U: null
+                                };
+                            }
+                            L.set(i, j, divResult);
+                        } else {
+                            if (Math.abs(u_jj) < 1e-10) {
+                                return {
+                                    success: false,
+                                    error: `Сингулярная матрица: ноль на диагонали U[${j}][${j}]`,
+                                    L: null,
+                                    U: null
+                                };
+                            }
+                            L.set(i, j, sum / u_jj);
+                        }
+                    }
+                }
+            }
+
+            return { success: true, error: null, L: L, U: U };
+        }
     }
 
+    // ============================================
     // Функции интерфейса
+    // ============================================
+
     function createMatrixInputs(matrixName, size) {
         const container = document.getElementById(`${matrixName}-input-container`);
         container.innerHTML = '';
@@ -376,7 +459,6 @@
                     input.id = `${matrixName}-${i}-${j}`;
                     inputGroup.appendChild(input);
                 }
-
                 container.appendChild(inputGroup);
             }
         }
@@ -426,6 +508,53 @@
         document.getElementById('result-section').classList.remove('hidden');
     }
 
+    function displayLUResults(L, U, LU, verification) {
+        const container = document.getElementById('result-container');
+        container.innerHTML = '';
+
+        // Матрица L
+        const titleL = document.createElement('h3');
+        titleL.textContent = '📐 Матрица L (нижняя треугольная)';
+        titleL.style.color = '#667eea';
+        container.appendChild(titleL);
+
+        const matrixL = document.createElement('div');
+        matrixL.className = 'result-matrix';
+        matrixL.style.gridTemplateColumns = `repeat(${L.size}, 1fr)`;
+        for (let i = 0; i < L.size; i++) {
+            for (let j = 0; j < L.size; j++) {
+                const span = document.createElement('span');
+                const value = L.get(i, j);
+                span.textContent = IS_COMPLEX ? value.toString() : value.toFixed(2);
+                span.style.background = i >= j ? '#e8f4fd' : '#f8f9fa';
+                matrixL.appendChild(span);
+            }
+        }
+        container.appendChild(matrixL);
+
+        // Матрица U
+        const titleU = document.createElement('h3');
+        titleU.textContent = '📐 Матрица U (верхняя треугольная)';
+        titleU.style.color = '#667eea';
+        container.appendChild(titleU);
+
+        const matrixU = document.createElement('div');
+        matrixU.className = 'result-matrix';
+        matrixU.style.gridTemplateColumns = `repeat(${U.size}, 1fr)`;
+        for (let i = 0; i < U.size; i++) {
+            for (let j = 0; j < U.size; j++) {
+                const span = document.createElement('span');
+                const value = U.get(i, j);
+                span.textContent = IS_COMPLEX ? value.toString() : value.toFixed(2);
+                span.style.background = i <= j ? '#e8f4fd' : '#f8f9fa';
+                matrixU.appendChild(span);
+            }
+        }
+        container.appendChild(matrixU);
+
+        document.getElementById('result-section').classList.remove('hidden');
+    }
+
     function showError(message) {
         const container = document.getElementById('message-container');
         container.innerHTML = `<div class="error-message">${message}</div>`;
@@ -438,7 +567,10 @@
         setTimeout(() => container.innerHTML = '', 5000);
     }
 
+    // ============================================
     // Обработчики событий
+    // ============================================
+
     function onSetSize() {
         const size = parseInt(document.getElementById('matrix-size').value);
         if (size < 1 || size > 10) {
@@ -496,15 +628,9 @@
             showError('Сначала создайте матрицу A');
             return;
         }
-
         let scalar;
-        if (IS_COMPLEX) {
-            const real = parseFloat(document.getElementById('scalar-real').value) || 0;
-            const imag = parseFloat(document.getElementById('scalar-imag').value) || 0;
-            scalar = new Complex(real, imag);
-        } else {
-            scalar = parseFloat(document.getElementById('scalar-real').value) || 0;
-        }
+
+        scalar = parseFloat(document.getElementById('scalar-real').value) || 0;
 
         try {
             const result = matrixA.multiplyScalar(scalar);
@@ -512,6 +638,25 @@
             showInfo('Умножение на скаляр выполнено успешно');
         } catch (e) {
             showError(e.message);
+        }
+    }
+
+    // ============================================
+    // Обработчик LU-разложения
+    // ============================================
+
+    function onLUDecompose() {
+        if (!matrixA) {
+            showError('Сначала создайте матрицу A');
+            return;
+        }
+
+        showInfo('Выполнение LU-разложения...');
+
+        const result = matrixA.luDecompose();
+
+        if (!result.success) {
+            showError(`❌ Ошибка LU-разложения: ${result.error}`);
         }
     }
 
@@ -523,7 +668,10 @@
         showInfo('Память сброшена');
     }
 
-    // Инициализация при загрузке - читаем параметры из URL
+    // ============================================
+    // Инициализация при загрузке
+    // ============================================
+
     window.onload = function() {
         // Читаем тип элемента из URL параметров
         const urlParams = new URLSearchParams(window.location.search);
