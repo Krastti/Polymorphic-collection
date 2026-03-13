@@ -225,8 +225,13 @@ void matrix_set(Matrix* matrix, size_t row, size_t col, const void* value)
         LOG_ERROR("Возникла ошибка при установке значения матрицы! (row=%zu, col=%zu, n=%zu)", row, col, matrix ? matrix->n : 0);
         return;
     }
-    void* elem = matrix->data[row * matrix->n + col];
-    memcpy(elem, value, matrix->type->size);
+    matrix->type->destroy(matrix->data[row * matrix->n +col]);
+    void* new_elem = matrix->type->clone(value);
+    if (!new_elem)
+    {
+        LOG_ERROR("Не удалось клонировать значение при установке [%zu][%zu]", row, col);
+    }
+    matrix->data[row * matrix->n +col] = new_elem;
 
     LOG_DEBUG("Установлено значение в матрице [%zu][%zu]", row, col);
 }

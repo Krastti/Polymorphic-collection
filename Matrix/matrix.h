@@ -11,7 +11,7 @@
 typedef struct
 {
     size_t n;
-    void** data; // Убрать две звездочки
+    void** data;
     const FieldInfo* type;
 } Matrix;
 

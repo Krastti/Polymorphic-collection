@@ -1,6 +1,3 @@
-//
-// Created by Krastti on 01.03.2026.
-//
 #include  "../Типы данных/double_types.h"
 #include  "../Типы данных/complex_types.h"
 #include  "../Matrix/matrix.h"
@@ -629,9 +626,14 @@ int unit_tests() {
 
     if (tests_failed == 0) {
         printf("\n\033[32m Все тесты пройдены!\033[0m\n\n");
+        printf("\n\033[32m Нажмите Enter для завершения программы...\033[0m\n\n");
+        getchar();
         return 0;
     } else {
         printf("\n\033[31m Некоторые тесты не прошли проверку!\033[0m\n\n");
+        printf("\n\033[32m Нажмите Enter для завершения программы...\033[0m\n\n");
+        getchar();
         return 1;
     }
+
 }

@@ -107,25 +107,24 @@ static void* c_one(void) {
     return one;
 }
 
-static FieldInfo* instance = NULL;
+static FieldInfo instance;
+static int initialized = 0;
 
 const FieldInfo* get_complex_type_info(void) {
-    if (!instance) {
-        instance = malloc(sizeof(FieldInfo));
-        if (instance) {
-            instance->size = sizeof(Complex);
-            instance->clone = c_clone;
-            instance->zero = c_zero;
-            instance->one = c_one;
-            instance->destroy = c_destroy;
-            instance->print = c_print;
-            instance->sum = c_sum;
-            instance->mul = c_mul;
-            instance->mul_scalar = c_mul_scalar;
-            instance->divide = c_divide;
-            instance->is_zero = c_is_zero;
-            instance->equals = c_equals;
-        }
+    if (!initialized) {
+        instance.size = sizeof(Complex);
+        instance.clone = c_clone;
+        instance.zero = c_zero;
+        instance.one = c_one;
+        instance.destroy = c_destroy;
+        instance.print = c_print;
+        instance.sum = c_sum;
+        instance.mul = c_mul;
+        instance.mul_scalar = c_mul_scalar;
+        instance.divide = c_divide;
+        instance.is_zero = c_is_zero;
+        instance.equals = c_equals;
+        initialized = 1;
     }
-    return instance;
+    return &instance;
 }

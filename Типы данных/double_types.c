@@ -70,25 +70,24 @@ static int d_equals(const void* a, const void* b, double eps)
     return (diff < eps) ? 1 : 0;
 }
 
-static FieldInfo* instance = NULL;
+static FieldInfo instance;
+static int initialized = 0;
 
 const FieldInfo* get_double_type_info(void) {
-    if (!instance) {
-        instance = malloc(sizeof(FieldInfo));
-        if (instance) {
-            instance->size = sizeof(double);
-            instance->clone = d_clone;
-            instance->zero = d_zero;
-            instance->one = d_one;
-            instance->destroy = d_destroy;
-            instance->print = d_print;
-            instance->sum = d_sum;
-            instance->mul = d_mul;
-            instance->mul_scalar = d_mul_scalar;
-            instance->divide = d_divide;
-            instance->is_zero = d_is_zero;
-            instance->equals = d_equals;
-        }
-    }
-    return instance;
+    if (!initialized) {
+        instance.size = sizeof(double),
+        instance.clone = d_clone,
+        instance.zero = d_zero,
+        instance.one = d_one,
+        instance.destroy = d_destroy,
+        instance.print = d_print,
+        instance.sum = d_sum,
+        instance.mul = d_mul,
+        instance.mul_scalar = d_mul_scalar,
+        instance.divide = d_divide,
+        instance.is_zero = d_is_zero,
+        instance.equals = d_equals,
+        initialized = 1;
+    };
+    return &instance;
 }

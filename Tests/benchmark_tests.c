@@ -63,7 +63,7 @@ void test_lu_benchmark_with_html(void)
 {
     const FieldInfo* type = get_double_type_info();
 
-    size_t sizes[] = {10, 25, 50, 100, 200, 400, 800};
+    size_t sizes[] = {10, 25, 50, 100, 200, 400, 500};
     size_t num_sizes = sizeof(sizes) / sizeof(sizes[0]);
 
     double times_d[7], times_c[7];
