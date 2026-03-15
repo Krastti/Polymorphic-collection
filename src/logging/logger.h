@@ -1,7 +1,3 @@
-//
-// Created by Krastti on 04.03.2026.
-//
-
 #ifndef LABORATORYWORK1_LOGGER_H
 #define LABORATORYWORK1_LOGGER_H
 

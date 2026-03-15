@@ -1,10 +1,7 @@
-//
-// Created by Krastti on 01.03.2026.
-//
-
 #ifndef LABORATORYWORK1_COMPLEX_TYPES_H
 #define LABORATORYWORK1_COMPLEX_TYPES_H
-#include "double_types.h"
+#include "field_info.h"
+
 typedef struct
 {
     double real;
