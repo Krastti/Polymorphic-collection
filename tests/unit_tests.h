@@ -1,6 +1,6 @@
 #ifndef LABORATORYWORK1_TESTS_H
 #define LABORATORYWORK1_TESTS_H
 
-int unit_tests();
+void run_all_tests(void);
 
 #endif //LABORATORYWORK1_TESTS_H

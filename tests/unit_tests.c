@@ -1,579 +1,539 @@
-#include  "../src/types_info/double_type.h"
-#include  "../src//types_info/complex_type.h"
-#include  "../src/matrix/matrix.h"
-#include "macros.h"
-
-#include <math.h>
+#include "unit_tests.h"
+#include "../src/matrix/matrix.h"
+#include "../src/types_info/double_type.h"
+#include "../src/types_info/complex_type.h"
 #include <stdio.h>
-
-// Получить элемент матрицы для проверки
-static void* matrix_get_element(const Matrix* m, size_t row, size_t col) {
-    if (!m || row >= m->n || col >= m->n) return NULL;
-    return m->data[row * m->n + col];
-}
-
-// Проверка значения double в матрице
-static int check_double_element(const Matrix* m, size_t row, size_t col, double expected) {
-    double* val = (double*)matrix_get_element(m, row, col);
-    if (!val) return 0;
-    return (fabs(*val - expected) <= EPSILON);
-}
-
-// Проверка значения Complex в матрице
-static int check_complex_element(const Matrix* m, size_t row, size_t col, double exp_real, double exp_imag) {
-    Complex* val = (Complex*)matrix_get_element(m, row, col);
-    if (!val) return 0;
-    return (fabs(val->real - exp_real) <= EPSILON &&
-            fabs(val->imag - exp_imag) <= EPSILON);
-}
-
-void test_matrix_create_double() {
-    Matrix* m = matrix_create(3, get_double_type_info());
-    ASSERT_NOT_NULL(m);
-    ASSERT_EQ_INT(m->n, 3);
-    ASSERT_TRUE(m->type == get_double_type_info());
-    ASSERT_NOT_NULL(m->data);
-    matrix_destroy(m);
-}
-
-void test_matrix_create_complex() {
-    Matrix* m = matrix_create(2, get_complex_type_info());
-    ASSERT_NOT_NULL(m);
-    ASSERT_EQ_INT(m->n, 2);
-    ASSERT_TRUE(m->type == get_complex_type_info());
-    matrix_destroy(m);
-}
-
-void test_matrix_create_null_type() {
-    Matrix* m = matrix_create(2, NULL);
-    ASSERT_NULL(m);
-}
-
-void test_matrix_create_zero_size() {
-    Matrix* m = matrix_create(0, get_double_type_info());
-    ASSERT_NOT_NULL(m);
-    ASSERT_EQ_INT(m->n, 0);
-    matrix_destroy(m);
-}
-
-// Уничтожение NULL-матрицы
-void test_matrix_destroy_null() {
-    matrix_destroy(NULL);
-    ASSERT_TRUE(1);
-}
-
-void test_fill_double_matrix() {
-    Matrix* m = matrix_create(2, get_double_type_info());
-    double values[] = {1.0, 2.0, 3.0, 4.0};
-    fill_double_matrix(m, values);
-
-    ASSERT_TRUE(check_double_element(m, 0, 0, 1.0));
-    ASSERT_TRUE(check_double_element(m, 0, 1, 2.0));
-    ASSERT_TRUE(check_double_element(m, 1, 0, 3.0));
-    ASSERT_TRUE(check_double_element(m, 1, 1, 4.0));
-
-    matrix_destroy(m);
-}
-
-void test_fill_complex_matrix() {
-    Matrix* m = matrix_create(2, get_complex_type_info());
-    double values[][2] = {
-        {1.0, 2.0},
-        {3.0, 4.0},
-        {5.0, 6.0},
-        {7.0, 8.0}
-    };
-    fill_complex_matrix(m, values);
-
-    ASSERT_TRUE(check_complex_element(m, 0, 0, 1.0, 2.0));
-    ASSERT_TRUE(check_complex_element(m, 0, 1, 3.0, 4.0));
-    ASSERT_TRUE(check_complex_element(m, 1, 0, 5.0, 6.0));
-    ASSERT_TRUE(check_complex_element(m, 1, 1, 7.0, 8.0));
-
-    matrix_destroy(m);
-}
-
-void test_fill_null_matrix() {
-    double values[] = {1.0, 2.0, 3.0, 4.0};
-    fill_double_matrix(NULL, values);
-    ASSERT_TRUE(1);
-}
-
-void test_matrix_sum_double_basic() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    Matrix* B = matrix_create(2, get_double_type_info());
-
-    double dataA[] = {1, 2, 3, 4};
-    double dataB[] = {5, 6, 7, 8};
-    fill_double_matrix(A, dataA);
-    fill_double_matrix(B, dataB);
-
-    Matrix* C = matrix_sum(A, B);
-    ASSERT_NOT_NULL(C);
-    ASSERT_EQ_INT(C->n, 2);
-
-    ASSERT_TRUE(check_double_element(C, 0, 0, 6.0));
-    ASSERT_TRUE(check_double_element(C, 0, 1, 8.0));
-    ASSERT_TRUE(check_double_element(C, 1, 0, 10.0));
-    ASSERT_TRUE(check_double_element(C, 1, 1, 12.0));
-
-    matrix_destroy(A);
-    matrix_destroy(B);
-    matrix_destroy(C);
-}
-
-void test_matrix_sum_double_zero() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    Matrix* Z = matrix_create(2, get_double_type_info());
-
-    double dataA[] = {5, 6, 7, 8};
-    fill_double_matrix(A, dataA);
-
-    Matrix* C = matrix_sum(A, Z);
-    ASSERT_NOT_NULL(C);
-
-    ASSERT_TRUE(check_double_element(C, 0, 0, 5.0));
-    ASSERT_TRUE(check_double_element(C, 0, 1, 6.0));
-    ASSERT_TRUE(check_double_element(C, 1, 0, 7.0));
-    ASSERT_TRUE(check_double_element(C, 1, 1, 8.0));
-
-    matrix_destroy(A);
-    matrix_destroy(Z);
-    matrix_destroy(C);
-}
-
-void test_matrix_sum_null_pointer() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    Matrix* C = matrix_sum(NULL, A);
-    ASSERT_NULL(C);
-    C = matrix_sum(A, NULL);
-    ASSERT_NULL(C);
-    matrix_destroy(A);
-}
-
-void test_matrix_sum_type_mismatch() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    Matrix* B = matrix_create(2, get_complex_type_info());
-
-    Matrix* C = matrix_sum(A, B);
-    ASSERT_NULL(C);
-
-    matrix_destroy(A);
-    matrix_destroy(B);
-}
-
-void test_matrix_sum_size_mismatch() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    Matrix* B = matrix_create(3, get_double_type_info());
-
-    Matrix* C = matrix_sum(A, B);
-    ASSERT_NULL(C);
-
-    matrix_destroy(A);
-    matrix_destroy(B);
-}
-
-void test_matrix_sum_complex_basic() {
-    Matrix* A = matrix_create(2, get_complex_type_info());
-    Matrix* B = matrix_create(2, get_complex_type_info());
-
-    double dataA[][2] = {{1, 1}, {2, 2}, {3, 3}, {4, 4}};
-    double dataB[][2] = {{1, 0}, {0, 1}, {0, 0}, {1, 1}};
-    fill_complex_matrix(A, dataA);
-    fill_complex_matrix(B, dataB);
-
-    Matrix* C = matrix_sum(A, B);
-    ASSERT_NOT_NULL(C);
-
-    ASSERT_TRUE(check_complex_element(C, 0, 0, 2.0, 1.0));
-    ASSERT_TRUE(check_complex_element(C, 0, 1, 2.0, 3.0));
-    ASSERT_TRUE(check_complex_element(C, 1, 0, 3.0, 3.0));
-    ASSERT_TRUE(check_complex_element(C, 1, 1, 5.0, 5.0));
-
-    matrix_destroy(A);
-    matrix_destroy(B);
-    matrix_destroy(C);
-}
-
-void test_matrix_multiply_double_basic() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    Matrix* B = matrix_create(2, get_double_type_info());
-
-    double dataA[4] = {1, 2, 3, 4};
-    double dataB[4] = {2, 0, 1, 2};
-    fill_double_matrix(A, dataA);
-    fill_double_matrix(B, dataB);
-
-    Matrix* C = matrix_multiply(A, B);
-    ASSERT_NOT_NULL(C);
-
-    ASSERT_TRUE(check_double_element(C, 0, 0, 4.0));
-    ASSERT_TRUE(check_double_element(C, 0, 1, 4.0));
-    ASSERT_TRUE(check_double_element(C, 1, 0, 10.0));
-    ASSERT_TRUE(check_double_element(C, 1, 1, 8.0));
-
-    matrix_destroy(A);
-    matrix_destroy(B);
-    matrix_destroy(C);
-}
-
-void test_matrix_multiply_identity() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    Matrix* I = matrix_create(2, get_double_type_info());
-
-    double dataA[] = {5, 6, 7, 8};
-    double dataI[] = {1, 0, 0, 1};
-    fill_double_matrix(A, dataA);
-    fill_double_matrix(I, dataI);
-
-    Matrix* C = matrix_multiply(A, I);
-    ASSERT_NOT_NULL(C);
-
-    ASSERT_TRUE(check_double_element(C, 0, 0, 5.0));
-    ASSERT_TRUE(check_double_element(C, 0, 1, 6.0));
-    ASSERT_TRUE(check_double_element(C, 1, 0, 7.0));
-    ASSERT_TRUE(check_double_element(C, 1, 1, 8.0));
-
-    matrix_destroy(A);
-    matrix_destroy(I);
-    matrix_destroy(C);
-}
-
-void test_matrix_multiply_zero() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    Matrix* Z = matrix_create(2, get_double_type_info());
-
-    double dataA[] = {1, 2, 3, 4};
-    fill_double_matrix(A, dataA);
-
-    Matrix* C = matrix_multiply(A, Z);
-    ASSERT_NOT_NULL(C);
-
-    ASSERT_TRUE(check_double_element(C, 0, 0, 0.0));
-    ASSERT_TRUE(check_double_element(C, 0, 1, 0.0));
-    ASSERT_TRUE(check_double_element(C, 1, 0, 0.0));
-    ASSERT_TRUE(check_double_element(C, 1, 1, 0.0));
-
-    matrix_destroy(A);
-    matrix_destroy(Z);
-    matrix_destroy(C);
-}
-
-void test_matrix_multiply_null_pointer() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    Matrix* C = matrix_multiply(NULL, A);
-    ASSERT_NULL(C);
-    C = matrix_multiply(A, NULL);
-    ASSERT_NULL(C);
-    matrix_destroy(A);
-}
-
-void test_matrix_multiply_type_mismatch() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    Matrix* B = matrix_create(2, get_complex_type_info());
-
-    Matrix* C = matrix_multiply(A, B);
-    ASSERT_NULL(C);
-
-    matrix_destroy(A);
-    matrix_destroy(B);
-}
-
-void test_matrix_multiply_size_mismatch() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    Matrix* B = matrix_create(3, get_double_type_info());
-
-    Matrix* C = matrix_multiply(A, B);
-    ASSERT_NULL(C);
-
-    matrix_destroy(A);
-    matrix_destroy(B);
-}
-
-void test_matrix_multiply_complex_basic() {
-    Matrix* A = matrix_create(2, get_complex_type_info());
-    Matrix* B = matrix_create(2, get_complex_type_info());
-
-    double dataA[][2] = {{0, 1}, {0, 0}, {0, 0}, {0, 1}};
-    double dataB[][2] = {{0, 0}, {0, 1}, {0, 1}, {0, 0}};
-    fill_complex_matrix(A, dataA);
-    fill_complex_matrix(B, dataB);
-
-    Matrix* C = matrix_multiply(A, B);
-    ASSERT_NOT_NULL(C);
-
-    ASSERT_TRUE(check_complex_element(C, 0, 0, 0.0, 0.0));
-    ASSERT_TRUE(check_complex_element(C, 0, 1, -1.0, 0.0));
-    ASSERT_TRUE(check_complex_element(C, 1, 0, -1.0, 0.0));
-    ASSERT_TRUE(check_complex_element(C, 1, 1, 0.0, 0.0));
-
-    matrix_destroy(A);
-    matrix_destroy(B);
-    matrix_destroy(C);
-}
-
-void test_matrix_scalar_multiply_double_basic() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    double dataA[] = {1, 2, 3, 4};
-    fill_double_matrix(A, dataA);
-
-    double scalar = 3.0;
-    matrix_scalar_multiply(A, &scalar);
-
-    ASSERT_TRUE(check_double_element(A, 0, 0, 3.0));
-    ASSERT_TRUE(check_double_element(A, 0, 1, 6.0));
-    ASSERT_TRUE(check_double_element(A, 1, 0, 9.0));
-    ASSERT_TRUE(check_double_element(A, 1, 1, 12.0));
-
-    matrix_destroy(A);
-}
-
-void test_matrix_scalar_multiply_double_zero() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    double dataA[] = {5, 6, 7, 8};
-    fill_double_matrix(A, dataA);
-
-    double scalar = 0.0;
-    matrix_scalar_multiply(A, &scalar);
-
-    ASSERT_TRUE(check_double_element(A, 0, 0, 0.0));
-    ASSERT_TRUE(check_double_element(A, 0, 1, 0.0));
-    ASSERT_TRUE(check_double_element(A, 1, 0, 0.0));
-    ASSERT_TRUE(check_double_element(A, 1, 1, 0.0));
-
-    matrix_destroy(A);
-}
-
-void test_matrix_scalar_multiply_double_one() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    double dataA[] = {1, 2, 3, 4};
-    fill_double_matrix(A, dataA);
-
-    double scalar = 1.0;
-    matrix_scalar_multiply(A, &scalar);
-
-    ASSERT_TRUE(check_double_element(A, 0, 0, 1.0));
-    ASSERT_TRUE(check_double_element(A, 0, 1, 2.0));
-    ASSERT_TRUE(check_double_element(A, 1, 0, 3.0));
-    ASSERT_TRUE(check_double_element(A, 1, 1, 4.0));
-
-    matrix_destroy(A);
-}
-
-void test_matrix_scalar_multiply_null() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    matrix_scalar_multiply(NULL, &((double){1.0}));
-    matrix_scalar_multiply(A, NULL);
-    ASSERT_TRUE(1);
-    matrix_destroy(A);
-}
-
-void test_matrix_scalar_multiply_complex_basic() {
-    Matrix* A = matrix_create(2, get_complex_type_info());
-    double dataA[][2] = {{1, 0}, {0, 1}, {0, 0}, {1, 1}};
-    fill_complex_matrix(A, dataA);
-
-    Complex scalar = {0.0, 1.0};  /* i */
-    matrix_scalar_multiply(A, &scalar);
-
-    ASSERT_TRUE(check_complex_element(A, 0, 0, 0.0, 1.0));
-    ASSERT_TRUE(check_complex_element(A, 0, 1, -1.0, 0.0));
-    ASSERT_TRUE(check_complex_element(A, 1, 0, 0.0, 0.0));
-    ASSERT_TRUE(check_complex_element(A, 1, 1, -1.0, 1.0));
-
-    matrix_destroy(A);
-}
-
-void test_matrix_1x1_double() {
-    Matrix* A = matrix_create(1, get_double_type_info());
-    Matrix* B = matrix_create(1, get_double_type_info());
-
-    double dataA[] = {5.0};
-    double dataB[] = {3.0};
-    fill_double_matrix(A, dataA);
-    fill_double_matrix(B, dataB);
-
-    Matrix* C = matrix_sum(A, B);
-    ASSERT_NOT_NULL(C);
-    ASSERT_TRUE(check_double_element(C, 0, 0, 8.0));
-
-    Matrix* D = matrix_multiply(A, B);
-    ASSERT_NOT_NULL(D);
-    ASSERT_TRUE(check_double_element(D, 0, 0, 15.0));
-
-    matrix_destroy(A);
-    matrix_destroy(B);
-    matrix_destroy(C);
-    matrix_destroy(D);
-}
-
-void test_matrix_3x3_double() {
-    Matrix* A = matrix_create(3, get_double_type_info());
-    Matrix* B = matrix_create(3, get_double_type_info());
-
-    double dataA[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-    double dataB[] = {9, 8, 7, 6, 5, 4, 3, 2, 1};
-    fill_double_matrix(A, dataA);
-    fill_double_matrix(B, dataB);
-
-    Matrix* C = matrix_sum(A, B);
-    ASSERT_NOT_NULL(C);
-    ASSERT_EQ_INT(C->n, 3);
-
-    /* Проверка нескольких элементов */
-    ASSERT_TRUE(check_double_element(C, 0, 0, 10.0));
-    ASSERT_TRUE(check_double_element(C, 1, 1, 10.0));
-    ASSERT_TRUE(check_double_element(C, 2, 2, 10.0));
-
-    matrix_destroy(A);
-    matrix_destroy(B);
-    matrix_destroy(C);
-}
-
-void test_matrix_negative_values() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    double dataA[] = {-1, -2, -3, -4};
-    fill_double_matrix(A, dataA);
-
-    double scalar = -2.0;
-    matrix_scalar_multiply(A, &scalar);
-
-    ASSERT_TRUE(check_double_element(A, 0, 0, 2.0));
-    ASSERT_TRUE(check_double_element(A, 0, 1, 4.0));
-    ASSERT_TRUE(check_double_element(A, 1, 0, 6.0));
-    ASSERT_TRUE(check_double_element(A, 1, 1, 8.0));
-
-    matrix_destroy(A);
-}
-
-void test_matrix_floating_point_precision() {
-    Matrix* A = matrix_create(2, get_double_type_info());
-    double dataA[] = {0.1, 0.2, 0.3, 0.4};
-    fill_double_matrix(A, dataA);
-
-    Matrix* B = matrix_create(2, get_double_type_info());
-    double dataB[] = {0.1, 0.2, 0.3, 0.4};
-    fill_double_matrix(B, dataB);
-
-    Matrix* C = matrix_sum(A, B);
-    ASSERT_NOT_NULL(C);
-
-    ASSERT_TRUE(check_double_element(C, 0, 0, 0.2));
-    ASSERT_TRUE(check_double_element(C, 1, 1, 0.8));
-
-    matrix_destroy(A);
-    matrix_destroy(B);
-    matrix_destroy(C);
-}
-
-void test_matrix_memory_leak_check() {
-    /* Создаём и уничтожаем множество матриц для проверки утечек памяти */
-    for (int i = 0; i < 10; i++) {
-        Matrix* m = matrix_create(2, get_double_type_info());
-        double data[] = {1, 2, 3, 4};
-        fill_double_matrix(m, data);
-        matrix_destroy(m);
-    }
-    ASSERT_TRUE(1);
-}
-
-
-void test_matrix_print_double() {
-    printf("\n\033[36m[VISUAL]\033[0m Matrix Print (Double):\n");
-    Matrix* m = matrix_create(2, get_double_type_info());
-    double data[] = {1.5, 2.5, 3.5, 4.5};
-    fill_double_matrix(m, data);
-    matrix_print(m);
-    matrix_destroy(m);
-    ASSERT_TRUE(1);
-}
-
-void test_matrix_print_complex() {
-    printf("\n\033[36m[VISUAL]\033[0m Matrix Print (Complex):\n");
-    Matrix* m = matrix_create(2, get_complex_type_info());
-    double data[][2] = {{1, 2}, {3, 4}, {5, 6}, {7, 8}};
-    fill_complex_matrix(m, data);
-    matrix_print(m);
-    matrix_destroy(m);
-    ASSERT_TRUE(1);
-}
-
-int unit_tests() {
-    printf("\033[1m========================================\033[0m\n");
-    printf("\033[1m  Unit-тесты                            \033[0m\n");
-    printf("\033[1m========================================\033[0m\n\n");
-
-    printf("\033[1m--- Создание & Уничтожение ---\033[0m\n");
-    RUN_TEST(test_matrix_create_double);
-    RUN_TEST(test_matrix_create_complex);
-    RUN_TEST(test_matrix_create_null_type);
-    RUN_TEST(test_matrix_create_zero_size);
-    RUN_TEST(test_matrix_destroy_null);
-
-    printf("\n\033[1m--- Заполнение матриц ---\033[0m\n");
-    RUN_TEST(test_fill_double_matrix);
-    RUN_TEST(test_fill_complex_matrix);
-    RUN_TEST(test_fill_null_matrix);
-
-    printf("\n\033[1m--- Сумма вещественных матриц ---\033[0m\n");
-    RUN_TEST(test_matrix_sum_double_basic);
-    RUN_TEST(test_matrix_sum_double_zero);
-    RUN_TEST(test_matrix_sum_null_pointer);
-    RUN_TEST(test_matrix_sum_type_mismatch);
-    RUN_TEST(test_matrix_sum_size_mismatch);
-
-    printf("\n\033[1m--- Сумма комплексных матриц ---\033[0m\n");
-    RUN_TEST(test_matrix_sum_complex_basic);
-
-    printf("\n\033[1m--- Умножение вещественных матриц ---\033[0m\n");
-    RUN_TEST(test_matrix_multiply_double_basic);
-    RUN_TEST(test_matrix_multiply_identity);
-    RUN_TEST(test_matrix_multiply_zero);
-    RUN_TEST(test_matrix_multiply_null_pointer);
-    RUN_TEST(test_matrix_multiply_type_mismatch);
-    RUN_TEST(test_matrix_multiply_size_mismatch);
-
-    printf("\n\033[1m--- Умножение комплексных матриц ---\033[0m\n");
-    RUN_TEST(test_matrix_multiply_complex_basic);
-
-    printf("\n\033[1m--- Умножение на вещественный скаляр ---\033[0m\n");
-    RUN_TEST(test_matrix_scalar_multiply_double_basic);
-    RUN_TEST(test_matrix_scalar_multiply_double_zero);
-    RUN_TEST(test_matrix_scalar_multiply_double_one);
-    RUN_TEST(test_matrix_scalar_multiply_null);
-
-    printf("\n\033[1m--- Умножение на комплексный скаляр ---\033[0m\n");
-    RUN_TEST(test_matrix_scalar_multiply_complex_basic);
-
-    printf("\n\033[1m--- Граничные случаи & Обработка ошибок ---\033[0m\n");
-    RUN_TEST(test_matrix_1x1_double);
-    RUN_TEST(test_matrix_3x3_double);
-    RUN_TEST(test_matrix_negative_values);
-    RUN_TEST(test_matrix_floating_point_precision);
-    RUN_TEST(test_matrix_memory_leak_check);
-
-    printf("\n\033[1m--- Визуальные тесты---\033[0m\n");
-    RUN_TEST(test_matrix_print_double);
-    RUN_TEST(test_matrix_print_complex);
-
-    printf("\n\033[1m========================================\033[0m\n");
-    printf("\033[1m  Итоги тестов:                       \033[0m\n");
-    printf("\033[1m========================================\033[0m\n");
-    printf("Пройдено:  \033[33m%d\033[0m\n", tests_run);
-    printf("Провалено: \033[31m%d\033[0m\n", tests_failed);
-    printf("Успешных ассертов: \033[32m%d\033[0m\n", tests_passed);
-    printf("\033[1m========================================\033[0m\n");
-
-    if (tests_failed == 0) {
-        printf("\n\033[32m Все тесты пройдены!\033[0m\n\n");
-        printf("\n\033[32m Нажмите Enter для завершения программы...\033[0m\n\n");
-        getchar();
-        return 0;
+#include <math.h>
+
+static int tests_run = 0;
+static int tests_failed = 0;
+static int tests_passed = 0;
+
+static void assert_true(const int condition, const char *test_name) {
+    tests_run++;
+    if (condition) {
+        tests_passed++;
+        printf(" [PASS] %s\n", test_name);
     } else {
-        printf("\n\033[31m Некоторые тесты не прошли проверку!\033[0m\n\n");
-        printf("\n\033[32m Нажмите Enter для завершения программы...\033[0m\n\n");
-        getchar();
-        return 1;
+        tests_failed++;
+        printf(" [FAIL] %s\n", test_name);
     }
+}
 
+static void assert_false(const int condition, const char *test_name) {
+    assert_true(!condition, test_name);
+}
+
+static void assert_null(const void *ptr, const char *test_name) {
+    assert_true(ptr == NULL, test_name);
+}
+
+static void assert_not_null(const void *ptr, const char *test_name) {
+    assert_true(ptr != NULL, test_name);
+}
+
+static void assert_double_equal(const double actual, const double expected, const char *test_name) {
+    int ok = fabs(actual - expected) < 1e-9;
+    if (!ok) {
+        printf(" [FAIL] %s (expected=%0.9f, actual=%.9f)\n", test_name, expected, actual);
+        tests_failed++;
+    } else {
+        printf(" [PASS] %s\n", test_name);
+        tests_passed++;
+    }
+}
+
+static void test_create_returns_non_null(void) {
+    Matrix *matrix = matrix_create(3, get_double_type_info());
+    assert_not_null(matrix, "test_create_returns_non_null");
+    matrix_destroy(matrix);
+}
+
+static void test_create_1x1(void) {
+    Matrix *matrix = matrix_create(1, get_double_type_info());
+    assert_not_null(matrix, "test_create_1x1");
+    matrix_destroy(matrix);
+}
+
+static void test_create_0x0(void) {
+    Matrix *matrix = matrix_create(0, get_double_type_info());
+    assert_null(matrix, "test_create_0x0");
+}
+
+static void test_create_null_type(void) {
+    Matrix *matrix = matrix_create(3, NULL);
+    assert_null(matrix, "test_create_null_type");
+}
+
+static void test_get_set_double(void) {
+    Matrix *matrix = matrix_create(2, get_double_type_info());
+    double value = 3.0;
+    matrix_set(matrix, 0, 1, &value);
+    double *got = (double *)matrix_get(matrix, 0, 1);
+    assert_not_null(got, "test_get_set_double");
+    assert_double_equal(*got, 3.0, "test_get_set_double");
+    matrix_destroy(matrix);
+}
+
+static void test_get_set_complex(void) {
+    Matrix *matrix = matrix_create(2, get_complex_type_info());
+    Complex value = make_complex(3.0, 4.0);
+    matrix_set(matrix, 0, 1, &value);
+    Complex *got = (Complex *)matrix_get(matrix, 0, 1);
+    assert_not_null(got, "test_get_set_complex");
+    assert_double_equal(got->real, 3.0, "test_get_set_complex");
+    assert_double_equal(got->imag, 4.0, "test_get_set_complex");
+    matrix_destroy(matrix);
+}
+
+static void test_get_out_of_bounds(void) {
+    Matrix *matrix = matrix_create(2, get_double_type_info());
+    void *got = matrix_get(matrix, 3, 3);
+    assert_null(got, "test_get_out_of_bounds");
+    matrix_destroy(matrix);
+}
+
+static void test_get_null_matrix(void) {
+    void *got = matrix_get(NULL, 0, 0);
+    assert_null(got, "test_get_null_matrix");
+}
+
+static void test_set_null_matrix(void) {
+    double value = 5.0;
+    matrix_set(NULL, 0, 0, &value);
+    assert_true(1, "test_set_null_matrix");
+}
+
+static void test_set_out_of_bounds_row(void) {
+    Matrix *matrix = matrix_create(2, get_double_type_info());
+    double value = 5.0;
+    matrix_set(matrix, 5, 0, &value);
+    assert_not_null(matrix, "test_set_out_of_bounds_row");
+    matrix_destroy(matrix);
+}
+
+static void test_set_out_of_bounds_col(void) {
+    Matrix *matrix = matrix_create(2, get_double_type_info());
+    double value = 5.0;
+    matrix_set(matrix, 0, 5, &value);
+    assert_not_null(matrix, "test_set_out_of_bounds_col");
+    matrix_destroy(matrix);
+}
+
+static void test_sum_double(void) {
+    Matrix *matrix1 = matrix_create(2, get_double_type_info());
+    Matrix *matrix2 = matrix_create(2, get_double_type_info());
+    double va[4] = {1.0, 2.0, 3.0, 4.0};
+    double vb[4] = {5.0, 6.0, 7.0, 8.0};
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            matrix_set(matrix1, i, j, &va[i*2+j]);
+            matrix_set(matrix2, i, j, &vb[i*2+j]);
+        }
+    }
+    Matrix *result = matrix_sum(matrix1, matrix2);
+    assert_not_null(result, "test_sum_double");
+    assert_double_equal(*(double *)matrix_get(result, 0, 0), 6.0, "test_sum_double");
+    assert_double_equal(*(double *)matrix_get(result, 0, 1), 8.0, "test_sum_double");
+    assert_double_equal(*(double *)matrix_get(result, 1, 0), 10.0, "test_sum_double");
+    assert_double_equal(*(double *)matrix_get(result, 1, 1), 12.0, "test_sum_double");
+    matrix_destroy(matrix1);
+    matrix_destroy(matrix2);
+    matrix_destroy(result);
+}
+
+static void test_sum_with_zero_matrix(void) {
+    Matrix *matrix = matrix_create(2, get_double_type_info());
+    Matrix *zero = matrix_create(2, get_double_type_info());
+    double value = 1.0;
+    matrix_set(matrix, 0, 1, &value);
+    Matrix *result = matrix_sum(matrix, zero);
+    assert_double_equal(*(double *)matrix_get(result, 0, 0), 1.0, "test_sum_with_zero_matrix");
+    assert_double_equal(*(double *)matrix_get(result, 0, 1), 0.0, "test_sum_with_zero_matrix");
+    matrix_destroy(matrix);
+    matrix_destroy(zero);
+    matrix_destroy(result);
+}
+
+static void test_sum_incompatible_sizes(void) {
+    Matrix *matrix1 = matrix_create(2, get_double_type_info());
+    Matrix *matrix2 = matrix_create(3, get_double_type_info());
+    Matrix *result = matrix_sum(matrix1, matrix2);
+    assert_null(result, "test_sum_incompatible_sizes");
+    matrix_destroy(matrix1);
+    matrix_destroy(matrix2);
+}
+
+static void test_sum_complex(void) {
+    Matrix *matrix1 = matrix_create(2, get_complex_type_info());
+    Matrix *matrix2 = matrix_create(2, get_complex_type_info());
+    Complex va = make_complex(1.0, 2.0);
+    Complex vb = make_complex(3.0, -1.0);
+    matrix_set(matrix1, 0, 0, &va);
+    matrix_set(matrix2, 0, 0, &vb);
+    Matrix *result = matrix_sum(matrix1, matrix2);
+    Complex *res = (Complex *)matrix_get(result, 0, 0);
+    assert_double_equal(res->real, 4.0, "test_sum_complex");
+    assert_double_equal(res->imag, 1.0, "test_sum_complex");
+    matrix_destroy(matrix1);
+    matrix_destroy(matrix2);
+    matrix_destroy(result);
+}
+
+static void test_sum_null_matrix1(void) {
+    Matrix *matrix2 = matrix_create(2, get_double_type_info());
+    Matrix *result = matrix_sum(NULL, matrix2);
+    assert_null(result, "test_sum_null_matrix1");
+    matrix_destroy(matrix2);
+}
+
+static void test_sum_null_matrix2(void) {
+    Matrix *matrix1 = matrix_create(2, get_double_type_info());
+    Matrix *result = matrix_sum(matrix1, NULL);
+    assert_null(result, "test_sum_null_matrix2");
+    matrix_destroy(matrix1);
+}
+
+static void test_sum_both_null(void) {
+    Matrix *result = matrix_sum(NULL, NULL);
+    assert_null(result, "test_sum_both_null");
+}
+
+static void test_sum_different_types(void) {
+    Matrix *matrix1 = matrix_create(2, get_double_type_info());
+    Matrix *matrix2 = matrix_create(2, get_complex_type_info());
+    Matrix *result = matrix_sum(matrix1, matrix2);
+    assert_null(result, "test_sum_different_types");
+    matrix_destroy(matrix1);
+    matrix_destroy(matrix2);
+}
+
+static void test_mul_double_2x2(void) {
+    Matrix *matrix1 = matrix_create(2, get_double_type_info());
+    Matrix *matrix2 = matrix_create(2, get_double_type_info());
+    double va[4] = {1.0, 2.0, 3.0, 4.0};
+    double vb[4] = {2.0, 0.0, 1.0, 2.0};
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            matrix_set(matrix1, i, j, &va[i*2+j]);
+            matrix_set(matrix2, i, j, &vb[i*2+j]);
+        }
+    }
+    Matrix *result = matrix_multiply(matrix1, matrix2);
+    assert_not_null(result, "test_mul_double_2x2");
+    assert_double_equal(*(double *)matrix_get(result, 0, 0), 4.0, "test_mul_double_2x2");
+    assert_double_equal(*(double *)matrix_get(result, 0, 1), 4.0, "test_mul_double_2x2");
+    assert_double_equal(*(double *)matrix_get(result, 1, 0), 10.0, "test_mul_double_2x2");
+    assert_double_equal(*(double *)matrix_get(result, 1, 1), 8.0, "test_mul_double_2x2");
+    matrix_destroy(matrix1);
+    matrix_destroy(matrix2);
+    matrix_destroy(result);
+}
+
+static void test_mul_by_identity(void) {
+    Matrix *matrix1 = matrix_create(2, get_double_type_info());
+    Matrix *matrix2 = matrix_create(2, get_double_type_info());
+    double va[4] = {1.0, 2.0, 3.0, 4.0};
+    double vb[4] = {1.0, 0.0, 0.0, 1.0};
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            matrix_set(matrix1, i, j, &va[i*2+j]);
+            matrix_set(matrix2, i, j, &vb[i*2+j]);
+        }
+    }
+    Matrix *result = matrix_multiply(matrix1, matrix2);
+    assert_not_null(result, "test_mul_by_identity");
+    assert_double_equal(*(double *)matrix_get(result, 0, 0), 1.0, "test_mul_by_identity");
+    assert_double_equal(*(double *)matrix_get(result, 0, 1), 2.0, "test_mul_by_identity");
+    assert_double_equal(*(double *)matrix_get(result, 1, 0), 3.0, "test_mul_by_identity");
+    assert_double_equal(*(double *)matrix_get(result, 1, 1), 4.0, "test_mul_by_identity");
+    matrix_destroy(matrix1);
+    matrix_destroy(matrix2);
+    matrix_destroy(result);
+}
+
+static void test_mul_by_zero(void) {
+    Matrix *matrix1 = matrix_create(2, get_double_type_info());
+    Matrix *matrix2 = matrix_create(2, get_double_type_info());
+    double value = 5.0;
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            matrix_set(matrix1, i, j, &value);
+        }
+    }
+    Matrix *result = matrix_multiply(matrix1, matrix2);
+    assert_double_equal(*(double *)matrix_get(result, 0, 0), 0.0, "test_mul_by_zero");
+    assert_double_equal(*(double *)matrix_get(result, 0, 1), 0.0, "test_mul_by_zero");
+    assert_double_equal(*(double *)matrix_get(result, 1, 0), 0.0, "test_mul_by_zero");
+    assert_double_equal(*(double *)matrix_get(result, 1, 1), 0.0, "test_mul_by_zero");
+    matrix_destroy(matrix1);
+    matrix_destroy(matrix2);
+    matrix_destroy(result);
+}
+
+static void test_mul_incompatible_size(void) {
+    Matrix *matrix1 = matrix_create(2, get_double_type_info());
+    Matrix *matrix2 = matrix_create(3, get_double_type_info());
+    Matrix *result = matrix_multiply(matrix1, matrix2);
+    assert_null(result, "test_mul_incompatible_size");
+    matrix_destroy(matrix1);
+    matrix_destroy(matrix2);
+}
+
+static void test_mul_1x1(void) {
+    Matrix *matrix1 = matrix_create(1, get_double_type_info());
+    Matrix *matrix2 = matrix_create(1, get_double_type_info());
+    double va = 4.0, vb = 5.0;
+    matrix_set(matrix1, 0, 0, &va);
+    matrix_set(matrix2, 0, 0, &vb);
+    Matrix *result = matrix_multiply(matrix1, matrix2);
+    assert_double_equal(*(double *)matrix_get(result, 0, 0), 20.0, "test_mul_1x1");
+    matrix_destroy(matrix1);
+    matrix_destroy(matrix2);
+    matrix_destroy(result);
+}
+
+static void test_mul_null_matrix1(void) {
+    Matrix *matrix2 = matrix_create(2, get_double_type_info());
+    Matrix *result = matrix_multiply(NULL, matrix2);
+    assert_null(result, "test_mul_null_matrix1");
+    matrix_destroy(matrix2);
+}
+
+static void test_mul_null_matrix2(void) {
+    Matrix *matrix1 = matrix_create(2, get_double_type_info());
+    Matrix *result = matrix_multiply(matrix1, NULL);
+    assert_null(result, "test_mul_null_matrix2");
+    matrix_destroy(matrix1);
+}
+
+static void test_mul_both_null(void) {
+    Matrix *result = matrix_multiply(NULL, NULL);
+    assert_null(result, "test_mul_both_null");
+}
+
+static void test_mul_different_types(void) {
+    Matrix *matrix1 = matrix_create(2, get_double_type_info());
+    Matrix *matrix2 = matrix_create(2, get_complex_type_info());
+    Matrix *result = matrix_multiply(matrix1, matrix2);
+    assert_null(result, "test_mul_different_types");
+    matrix_destroy(matrix1);
+    matrix_destroy(matrix2);
+}
+
+static void test_mul_by_scalar_double(void) {
+    Matrix *matrix = matrix_create(2, get_double_type_info());
+    double va[4] = {1.0, 2.0, 3.0, 4.0};
+    double scalar = 2.0;
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            matrix_set(matrix, i, j, &va[i*2+j]);
+        }
+    }
+    Matrix *result = matrix_multiply_by_scalar(matrix, &scalar);
+    assert_not_null(result, "test_mul_by_scalar_double");
+    assert_double_equal(*(double *)matrix_get(result, 0, 0), 2.0, "test_mul_by_scalar_double");
+    assert_double_equal(*(double *)matrix_get(result, 0, 1), 4.0, "test_mul_by_scalar_double");
+    assert_double_equal(*(double *)matrix_get(result, 1, 0), 6.0, "test_mul_by_scalar_double");
+    assert_double_equal(*(double *)matrix_get(result, 1, 1), 8.0, "test_mul_by_scalar_double");
+    matrix_destroy(matrix);
+    matrix_destroy(result);
+}
+
+static void test_mul_by_scalar_null_matrix(void) {
+    double scalar = 2.0;
+    Matrix *result = matrix_multiply_by_scalar(NULL, &scalar);
+    assert_null(result, "test_mul_by_scalar_null_matrix");
+}
+
+static void test_mul_by_scalar_null_scalar(void) {
+    Matrix *matrix = matrix_create(2, get_double_type_info());
+    Matrix *result = matrix_multiply_by_scalar(matrix, NULL);
+    assert_null(result, "test_mul_by_scalar_null_scalar");
+    matrix_destroy(matrix);
+}
+
+static void test_mul_by_scalar_complex(void) {
+    Matrix *matrix = matrix_create(2, get_complex_type_info());
+    Complex va = make_complex(1.0, 2.0);
+    Complex scalar = make_complex(2.0, 0.0);
+    matrix_set(matrix, 0, 0, &va);
+    Matrix *result = matrix_multiply_by_scalar(matrix, &scalar);
+    Complex *res = (Complex *)matrix_get(result, 0, 0);
+    assert_not_null(result, "test_mul_by_scalar_complex");
+    assert_double_equal(res->real, 2.0, "test_mul_by_scalar_complex");
+    assert_double_equal(res->imag, 4.0, "test_mul_by_scalar_complex");
+    matrix_destroy(matrix);
+    matrix_destroy(result);
+}
+
+static void test_print_null_matrix(void) {
+    matrix_print(NULL);
+    assert_true(1, "test_print_null_matrix");
+}
+
+static void test_print_0x0_matrix(void) {
+    Matrix *matrix = matrix_create(0, get_double_type_info());
+    assert_null(matrix, "test_print_0x0_matrix");
+}
+
+static void test_print_1x1_matrix(void) {
+    Matrix *matrix = matrix_create(1, get_double_type_info());
+    double value = 5.0;
+    matrix_set(matrix, 0, 0, &value);
+    matrix_print(matrix);
+    assert_not_null(matrix, "test_print_1x1_matrix");
+    matrix_destroy(matrix);
+}
+
+static void test_print_2x2_matrix(void) {
+    Matrix *matrix = matrix_create(2, get_double_type_info());
+    double va[4] = {1.0, 2.0, 3.0, 4.0};
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            matrix_set(matrix, i, j, &va[i*2+j]);
+        }
+    }
+    matrix_print(matrix);
+    assert_not_null(matrix, "test_print_2x2_matrix");
+    matrix_destroy(matrix);
+}
+
+static void test_lu_decomposition_basic(void) {
+    Matrix *matrix = matrix_create(2, get_double_type_info());
+    double va[4] = {4.0, 3.0, 6.0, 3.0};
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            matrix_set(matrix, i, j, &va[i*2+j]);
+        }
+    }
+    Matrix *L = NULL;
+    Matrix *U = NULL;
+    bool result = matrix_lu_decomposition(matrix, &L, &U);
+    assert_true(result, "test_lu_decomposition_basic");
+    assert_not_null(L, "test_lu_decomposition_basic_L");
+    assert_not_null(U, "test_lu_decomposition_basic_U");
+    assert_double_equal(*(double *)matrix_get(L, 0, 0), 1.0, "test_lu_decomposition_basic_L00");
+    matrix_destroy(matrix);
+    matrix_destroy(L);
+    matrix_destroy(U);
+}
+
+static void test_lu_decomposition_null_matrix(void) {
+    Matrix *L = NULL;
+    Matrix *U = NULL;
+    bool result = matrix_lu_decomposition(NULL, &L, &U);
+    assert_false(result, "test_lu_decomposition_null_matrix");
+}
+
+static void test_lu_decomposition_null_out_L(void) {
+    Matrix *matrix = matrix_create(2, get_double_type_info());
+    Matrix *U = NULL;
+    bool result = matrix_lu_decomposition(matrix, NULL, &U);
+    assert_false(result, "test_lu_decomposition_null_out_L");
+    matrix_destroy(matrix);
+}
+
+static void test_lu_decomposition_null_out_U(void) {
+    Matrix *matrix = matrix_create(2, get_double_type_info());
+    Matrix *L = NULL;
+    bool result = matrix_lu_decomposition(matrix, &L, NULL);
+    assert_false(result, "test_lu_decomposition_null_out_U");
+    matrix_destroy(matrix);
+}
+
+static void test_lu_decomposition_3x3(void) {
+    Matrix *matrix = matrix_create(3, get_double_type_info());
+    double va[9] = {2.0, 1.0, 1.0, 4.0, 3.0, 3.0, 8.0, 7.0, 9.0};
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            matrix_set(matrix, i, j, &va[i*3+j]);
+        }
+    }
+    Matrix *L = NULL;
+    Matrix *U = NULL;
+    bool result = matrix_lu_decomposition(matrix, &L, &U);
+    assert_true(result, "test_lu_decomposition_3x3");
+    assert_not_null(L, "test_lu_decomposition_3x3_L");
+    assert_not_null(U, "test_lu_decomposition_3x3_U");
+    matrix_destroy(matrix);
+    matrix_destroy(L);
+    matrix_destroy(U);
+}
+
+static void test_destroy_null(void) {
+    matrix_destroy(NULL);
+    assert_true(1, "test_destroy_null");
+}
+
+void run_all_tests(void) {
+    printf("\n=== Тесты создания матриц ===\n");
+    test_create_returns_non_null();
+    test_create_1x1();
+    test_create_0x0();
+    test_create_null_type();
+
+    printf("\n=== Тесты получения/установки значений ===\n");
+    test_get_set_double();
+    test_get_set_complex();
+    test_get_out_of_bounds();
+    test_get_null_matrix();
+    test_set_null_matrix();
+    test_set_out_of_bounds_row();
+    test_set_out_of_bounds_col();
+
+    printf("\n=== Тесты сложения матриц ===\n");
+    test_sum_double();
+    test_sum_with_zero_matrix();
+    test_sum_incompatible_sizes();
+    test_sum_complex();
+    test_sum_null_matrix1();
+    test_sum_null_matrix2();
+    test_sum_both_null();
+    test_sum_different_types();
+
+    printf("\n=== Тесты умножения матриц ===\n");
+    test_mul_double_2x2();
+    test_mul_by_identity();
+    test_mul_by_zero();
+    test_mul_incompatible_size();
+    test_mul_1x1();
+    test_mul_null_matrix1();
+    test_mul_null_matrix2();
+    test_mul_both_null();
+    test_mul_different_types();
+
+    printf("\n=== Тесты умножения на скаляр ===\n");
+    test_mul_by_scalar_double();
+    test_mul_by_scalar_null_matrix();
+    test_mul_by_scalar_null_scalar();
+    test_mul_by_scalar_complex();
+
+    printf("\n=== Тесты печати матриц ===\n");
+    test_print_null_matrix();
+    test_print_0x0_matrix();
+    test_print_1x1_matrix();
+    test_print_2x2_matrix();
+
+    printf("\n=== Тесты LU-разложения ===\n");
+    test_lu_decomposition_basic();
+    test_lu_decomposition_null_matrix();
+    test_lu_decomposition_null_out_L();
+    test_lu_decomposition_null_out_U();
+    test_lu_decomposition_3x3();
+
+    printf("\n=== Тесты уничтожения матриц ===\n");
+    test_destroy_null();
+
+    printf("\n========================================\n");
+    printf("Тестов запущено: %d\n", tests_run);
+    printf("Тестов пройдено: %d\n", tests_passed);
+    printf("Тестов провалено: %d\n", tests_failed);
+    printf("========================================\n");
+
+    if (tests_run == tests_passed) {
+      printf("\nВсе тесты пройдены. Нажмите чтобы продолжить\n");
+    } else {
+      printf("\nНе все тесты прошли проверку. Нажмите чтобы продолжить");
+    }
 }
