@@ -1,69 +1,10 @@
-#include  "../Типы данных/double_types.h"
-#include  "../Типы данных/complex_types.h"
-#include  "../Matrix/matrix.h"
+#include  "../src/types_info/double_type.h"
+#include  "../src//types_info/complex_type.h"
+#include  "../src/matrix/matrix.h"
+#include "macros.h"
 
 #include <math.h>
 #include <stdio.h>
-
-static int tests_run = 0;
-static int tests_failed = 0;
-static int tests_passed = 0;
-
-#define EPSILON 1e-6
-
-#define ASSERT_TRUE(cond) \
-    do { if (!(cond)) { \
-        printf("\033[31m[FAIL]\033[0m %s at line %d\n", #cond, __LINE__); \
-        tests_failed++; } \
-        else { tests_passed++; } \
-    } while (0)
-
-#define ASSERT_EQ_INT(a, b) \
-    do { if ((a) != (b)) { \
-        printf("\033[31m[FAIL]\033[0m %zu != %zu at line %d\n", (size_t)(a), (size_t)(b), __LINE__); \
-        tests_failed++; } \
-        else { tests_passed++; } \
-    } while (0)
-
-#define ASSERT_NOT_NULL(ptr) \
-    do { if ((ptr) == NULL) { \
-        printf("\033[31m[FAIL]\033[0m Expected non-NULL at line %d\n", __LINE__); \
-        tests_failed++; } \
-        else { tests_passed++; } \
-    } while (0)
-
-#define ASSERT_NULL(ptr) \
-    do { if ((ptr) != NULL) { \
-        printf("\033[31m[FAIL]\033[0m Expected NULL at line %d\n", __LINE__); \
-        tests_failed++; } \
-        else { tests_passed++; } \
-    } while (0)
-
-#define ASSERT_NEAR_DOUBLE(a, b) \
-    do { if (fabs((a) - (b)) > EPSILON) { \
-        printf("\033[31m[FAIL]\033[0m %f != %f (diff=%e) at line %d\n", (a), (b), fabs((a)-(b)), __LINE__); \
-        tests_failed++; } \
-        else { tests_passed++; } \
-    } while (0)
-
-#define ASSERT_NEAR_COMPLEX(a_real, a_imag, b_real, b_imag) \
-    do { \
-        double diff_real = fabs((a_real) - (b_real)); \
-        double diff_imag = fabs((a_imag) - (b_imag)); \
-        if (diff_real > EPSILON || diff_imag > EPSILON) { \
-            printf("\033[31m[FAIL]\033[0m (%.4f+%.4fi) != (%.4f+%.4fi) at line %d\n", \
-                (a_real), (a_imag), (b_real), (b_imag), __LINE__); \
-            tests_failed++; } \
-        else { tests_passed++; } \
-    } while (0)
-
-#define RUN_TEST(func) \
-    do { printf("\033[33m[TEST]\033[0m %s... ", #func); \
-        tests_run++; \
-        func(); \
-        if (tests_failed == 0) printf("\033[32mOK\033[0m\n"); \
-        else printf("\033[31mFAILED\033[0m\n"); \
-    } while (0)
 
 // Получить элемент матрицы для проверки
 static void* matrix_get_element(const Matrix* m, size_t row, size_t col) {
@@ -79,8 +20,7 @@ static int check_double_element(const Matrix* m, size_t row, size_t col, double 
 }
 
 // Проверка значения Complex в матрице
-static int check_complex_element(const Matrix* m, size_t row, size_t col,
-                                  double exp_real, double exp_imag) {
+static int check_complex_element(const Matrix* m, size_t row, size_t col, double exp_real, double exp_imag) {
     Complex* val = (Complex*)matrix_get_element(m, row, col);
     if (!val) return 0;
     return (fabs(val->real - exp_real) <= EPSILON &&
