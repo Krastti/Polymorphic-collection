@@ -10,9 +10,14 @@ typedef struct {
 
     void (*print)(const void* elem);
     void (*sum)(const void* a, const void* b, void* res);
+    void (*sub)(const void* a, const void* b, void* res);
     void (*mul)(const void* a, const void* b, void* res);
+    void (*div)(const void* a, const void* b, void* res);
 
     void (*zero)(void* elem);
     void (*one)(void* elem);
+
+    void (*neg)(const void* elem, void* res);
+    void (*frac)(const void* elem, void* res);
 } FieldInfo;
 #endif //LABORATORYWORK1_FIELD_INFO_H

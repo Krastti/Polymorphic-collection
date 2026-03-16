@@ -1,7 +1,7 @@
 #ifndef LABORATORYWORK1_DOUBLE_MATRIX_H
 #define LABORATORYWORK1_DOUBLE_MATRIX_H
-
-#include "../types_info/double_type.h"
+#include <stdbool.h>
+#include "../types_info/field_info.h"
 
 typedef struct
 {
@@ -18,5 +18,7 @@ Matrix* matrix_multiply_by_scalar(const Matrix* matrix, const void* scalar);
 void matrix_print(const Matrix* matrix);
 void matrix_destroy(Matrix* matrix);
 void matrix_set(Matrix* matrix, size_t row, size_t col, const void* value);
+void* matrix_get(const Matrix* matrix, const size_t row, const size_t col);
 
+bool matrix_lu_decomposition(const Matrix* matrix, Matrix** out_L, Matrix** out_U);
 #endif //LABORATORYWORK1_DOUBLE_MATRIX_H

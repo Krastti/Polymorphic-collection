@@ -22,13 +22,35 @@ static void d_sum(const void* a, const void* b, void* res)
     *(double*)res = *(const double*)a + *(const double*)b;
 }
 
+static void d_sub(const void* a, const void* b, void* res)
+{
+    *(double*)res = *(const double*)a - *(const double*)b;
+}
+
 static void d_mul(const void* a, const void* b, void* res)
 {
     *(double*)res = *(const double*)a * *(const double*)b;
 }
 
+static void d_div(const void* a, const void* b, void* res)
+{
+    if (*(double*)b == 0.0) return;
+    *(double*)res = *(const double*)a / *(const double*)b;
+}
+
 static void d_zero(void* res) { *(double*)res = 0.0; }
 static void d_one(void* res) { *(double*)res = 1.0; }
+
+static void d_neg(const void* elem, void* res)
+{
+    *(double*)res = -1.0 * *(const double*)elem;
+}
+
+static void d_frac(const void* elem, void* res)
+{
+    if (*(const double*)elem == 0.0) return;
+    *(double*)res = 1.0 / *(const double*)elem;
+}
 
 static FieldInfo* instance = NULL;
 
@@ -43,9 +65,14 @@ const FieldInfo* get_double_type_info(void)
 
     instance->print = d_print;
     instance->sum = d_sum;
+    instance->sub = d_sub;
     instance->mul = d_mul;
+    instance->div = d_div;
 
     instance->zero = d_zero;
     instance->one = d_one;
+
+    instance->neg = d_neg;
+    instance->frac = d_frac;
     return instance;
 }

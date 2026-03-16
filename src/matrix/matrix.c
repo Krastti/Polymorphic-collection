@@ -197,9 +197,9 @@ void matrix_destroy(Matrix* matrix)
         matrix->type->destroy(matrix_at_i(matrix, i));
     }
 
+    LOG_INFO("Матрица %zux%zu успешно уничтожена", matrix->n, matrix->n);
     free(matrix->data);
     free(matrix);
-    LOG_INFO("Матрица %zux%zu успешно уничтожена", matrix->n, matrix->n);
 }
 
 void matrix_set(Matrix* matrix, const size_t row, const size_t col, const void* value)
@@ -219,5 +219,76 @@ void matrix_set(Matrix* matrix, const size_t row, const size_t col, const void* 
     }
 
     memcpy(element, new_element, matrix->type->size);
+    free(new_element);
     LOG_DEBUG("Установлено значение в матрице [%zu][%zu]", row, col);
+}
+
+void* matrix_get(const Matrix* matrix, const size_t row, const size_t col)
+{
+    if (!matrix || row >= matrix->n || col >= matrix->n)
+    {
+        LOG_ERROR("Возникла ошибка при получении значения матрицы! (row=%zu, col=%zu, n=%zu)", row, col, matrix ? matrix->n : 0);
+        return NULL;
+    }
+    return matrix_at_ij(matrix, row, col);
+}
+
+bool matrix_lu_decomposition(const Matrix* matrix, Matrix** out_L, Matrix** out_U)
+{
+    if (!matrix || !out_L || !out_U) {
+        LOG_ERROR("Возникла ошибка при LU-разложении!");
+        return false;
+    }
+
+    Matrix* L = matrix_create(matrix->n, matrix->type);
+    Matrix* U = matrix_create(matrix->n, matrix->type);
+    if (!L || !U)
+    {
+        LOG_ERROR("Не удалось создать матрицу L и U для LU-разложения!");
+        if (L) matrix_destroy(L);
+        if (U) matrix_destroy(U);
+        return false;
+    }
+
+    void *tmp = malloc(matrix->type->size);
+    void *product = malloc(matrix->type->size);
+    if (!tmp || !product) {
+        LOG_ERROR("Не удалось выделить временную память!");
+        free(tmp);
+        free(product);
+        return false;
+    }
+
+    for (size_t k = 0; k < matrix->n; k++) {
+
+        for (size_t j = k; j < matrix->n; j++) {
+            matrix->type->zero(product);
+
+            for (size_t m = 0; m < k; m++) {
+                matrix->type->mul(matrix_at_ij(L, k, m), matrix_at_ij(U, m, k), tmp);
+                matrix->type->sum(product, tmp, product);
+            }
+
+            matrix->type->sub(matrix_at_ij(matrix, k, j), product, matrix_at_ij(U, k, j));
+        }
+
+        for (size_t i = k + 1; i < matrix->n; i++) {
+            matrix->type->zero(product);
+
+            for (size_t m = 0; m < k; m++) {
+                matrix->type->mul(matrix_at_ij(L, i, m), matrix_at_ij(U, m, k), tmp);
+                matrix->type->sum(product, tmp, product);
+            }
+            matrix->type->sub(matrix_at_ij(matrix, i, k), product, tmp);
+            matrix->type->div(tmp, matrix_at_ij(U, k, k), matrix_at_ij(L, i, k));
+        }
+
+        matrix->type->one(matrix_at_ij(L, k, k));
+    }
+
+    free(tmp);
+    free(product);
+    *out_L = L;
+    *out_U = U;
+    return true;
 }
