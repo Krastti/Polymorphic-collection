@@ -2,8 +2,7 @@
 #define LABORATORYWORK1_COMPLEX_TYPES_H
 #include "field_info.h"
 
-typedef struct
-{
+typedef struct {
     double real;
     double imag;
 } Complex;

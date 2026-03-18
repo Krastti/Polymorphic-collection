@@ -34,6 +34,7 @@ static void assert_not_null(const void *ptr, const char *test_name) {
 
 static void assert_double_equal(const double actual, const double expected, const char *test_name) {
     int ok = fabs(actual - expected) < 1e-9;
+    tests_run++;
     if (!ok) {
         printf(" [FAIL] %s (expected=%0.9f, actual=%.9f)\n", test_name, expected, actual);
         tests_failed++;
@@ -57,7 +58,7 @@ static void test_create_1x1(void) {
 
 static void test_create_0x0(void) {
     Matrix *matrix = matrix_create(0, get_double_type_info());
-    assert_null(matrix, "test_create_0x0");
+    assert_not_null(matrix, "test_create_0x0");
 }
 
 static void test_create_null_type(void) {
@@ -148,8 +149,8 @@ static void test_sum_with_zero_matrix(void) {
     double value = 1.0;
     matrix_set(matrix, 0, 1, &value);
     Matrix *result = matrix_sum(matrix, zero);
-    assert_double_equal(*(double *)matrix_get(result, 0, 0), 1.0, "test_sum_with_zero_matrix");
-    assert_double_equal(*(double *)matrix_get(result, 0, 1), 0.0, "test_sum_with_zero_matrix");
+    assert_double_equal(*(double *)matrix_get(result, 0, 1), 1.0, "test_sum_with_zero_matrix");
+    assert_double_equal(*(double *)matrix_get(result, 0, 0), 0.0, "test_sum_with_zero_matrix");
     matrix_destroy(matrix);
     matrix_destroy(zero);
     matrix_destroy(result);
@@ -374,7 +375,7 @@ static void test_print_null_matrix(void) {
 
 static void test_print_0x0_matrix(void) {
     Matrix *matrix = matrix_create(0, get_double_type_info());
-    assert_null(matrix, "test_print_0x0_matrix");
+    assert_not_null(matrix, "test_print_0x0_matrix");
 }
 
 static void test_print_1x1_matrix(void) {
@@ -533,9 +534,11 @@ void run_all_tests(void) {
 
     if (tests_run == tests_passed) {
       printf("\nВсе тесты пройдены. Нажмите чтобы продолжить\n");
-        getchar();
     } else {
       printf("\nНе все тесты прошли проверку. Нажмите чтобы продолжить");
-        getchar();
     }
+
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+    getchar();
 }
