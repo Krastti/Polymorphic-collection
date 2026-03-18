@@ -19,13 +19,13 @@ static inline void* matrix_at_ij(const Matrix* matrix, const size_t i, const siz
 Matrix* matrix_create(const size_t n, const FieldInfo* type)
 {
     if (!type) {
-        LOG_ERROR("Передаваемый тип некорректный!");
+        LOG_ERROR(g_logger, "Передаваемый тип некорректный!");
         return NULL;
     }
 
     Matrix* matrix = malloc(sizeof(Matrix));
     if (!matrix) {
-        LOG_ERROR("Не удалось выделить память под структуру Matrix!");
+        LOG_ERROR(g_logger, "Не удалось выделить память под структуру Matrix!");
         return NULL;
     }
 
@@ -34,7 +34,7 @@ Matrix* matrix_create(const size_t n, const FieldInfo* type)
     matrix->data = calloc(n * n, type->size);
 
     if (!matrix->data) {
-        LOG_ERROR("Не удалось выделить память под данные матрицы!");
+        LOG_ERROR(g_logger, "Не удалось выделить память под данные матрицы!");
         free(matrix);
         return NULL;
     }
@@ -44,30 +44,30 @@ Matrix* matrix_create(const size_t n, const FieldInfo* type)
         type->zero(matrix_at_i(matrix, i));
     }
 
-    LOG_INFO("Матрица %zux%zu успешно создана", n, n);
+    LOG_INFO(g_logger, "Матрица %zux%zu успешно создана", n, n);
     return matrix;
 }
 
 Matrix* matrix_sum(const Matrix* matrix1, const Matrix* matrix2)
 {
     if (!matrix1 || !matrix2) {
-        LOG_ERROR("Одна из передаваемых матриц не существует!");
+        LOG_ERROR(g_logger, "Одна из передаваемых матриц не существует!");
         return NULL;
     }
 
     if (matrix1->type != matrix2->type) {
-        LOG_ERROR("У матриц разные типы данных!");
+        LOG_ERROR(g_logger, "У матриц разные типы данных!");
         return NULL;
     }
 
     if (matrix1->n != matrix2->n) {
-        LOG_ERROR("Размеры матриц не совпадают! (%zu vs %zu)", matrix1->n, matrix2->n);
+        LOG_ERROR(g_logger, "Размеры матриц не совпадают! (%zu vs %zu)", matrix1->n, matrix2->n);
         return NULL;
     }
 
     Matrix* result = matrix_create(matrix1->n, matrix1->type);
     if (!result) {
-        LOG_ERROR("Не удалось создать матрицу результата для операции сложения!");
+        LOG_ERROR(g_logger, "Не удалось создать матрицу результата для операции сложения!");
         return NULL;
     }
 
@@ -80,36 +80,36 @@ Matrix* matrix_sum(const Matrix* matrix1, const Matrix* matrix2)
         matrix1->type->sum(element_matrix1, element_matrix2, element_result);
     }
 
-    LOG_INFO("Операция сложения матриц %zux%zu выполнена успешно", matrix1->n, matrix1->n);
+    LOG_INFO(g_logger, "Операция сложения матриц %zux%zu выполнена успешно", matrix1->n, matrix1->n);
     return result;
 }
 
 Matrix* matrix_multiply(const Matrix* matrix1, const Matrix* matrix2)
 {
     if (!matrix1 || !matrix2) {
-        LOG_ERROR("Одна из передаваемых матриц не существует!");
+        LOG_ERROR(g_logger, "Одна из передаваемых матриц не существует!");
         return NULL;
     }
 
     if (matrix1->type != matrix2->type) {
-        LOG_ERROR("У матриц разные типы данных!");
+        LOG_ERROR(g_logger, "У матриц разные типы данных!");
         return NULL;
     }
 
     if (matrix1->n != matrix2->n) {
-        LOG_ERROR("Размеры матриц не совпадают! (%zu vs %zu)", matrix1->n, matrix2->n);
+        LOG_ERROR(g_logger, "Размеры матриц не совпадают! (%zu vs %zu)", matrix1->n, matrix2->n);
         return NULL;
     }
 
     Matrix* result = matrix_create(matrix1->n, matrix1->type);
     if (!result) {
-        LOG_ERROR("Не удалось создать матрицу результата для операции умножения!");
+        LOG_ERROR(g_logger, "Не удалось создать матрицу результата для операции умножения!");
         return NULL;
     }
 
     void* tmp = malloc(result->type->size);
     if (!tmp) {
-        LOG_ERROR("Не удалось выделить память для промежуточного элемента умножения");
+        LOG_ERROR(g_logger, "Не удалось выделить память для промежуточного элемента умножения");
         return NULL;
     }
 
@@ -124,7 +124,7 @@ Matrix* matrix_multiply(const Matrix* matrix1, const Matrix* matrix2)
         }
     }
 
-    LOG_INFO("Операция умножения матриц %zux%zu выполнена успешно", matrix1->n, matrix1->n);
+    LOG_INFO(g_logger, "Операция умножения матриц %zux%zu выполнена успешно", matrix1->n, matrix1->n);
     free(tmp);
     return result;
 }
@@ -132,12 +132,12 @@ Matrix* matrix_multiply(const Matrix* matrix1, const Matrix* matrix2)
 Matrix* matrix_multiply_by_scalar(const Matrix* matrix, const void* scalar)
 {
     if (!matrix || !scalar) {
-        LOG_ERROR("Возникла ошибка при умножении на скаляр!");
+        LOG_ERROR(g_logger, "Возникла ошибка при умножении на скаляр!");
         return NULL;
     }
     Matrix* result = matrix_create(matrix->n, matrix->type);
     if (!result) {
-        LOG_ERROR("Не удалось создать матрицу результата для операции умножения на скаляр!");
+        LOG_ERROR(g_logger, "Не удалось создать матрицу результата для операции умножения на скаляр!");
         return NULL;
     }
 
@@ -147,19 +147,19 @@ Matrix* matrix_multiply_by_scalar(const Matrix* matrix, const void* scalar)
         void* res = matrix_at_i(result, i);
         matrix->type->mul(element, scalar, res);
     }
-    LOG_INFO("Операция умножения матрицы %zux%zu на скаляр выполнена успешно", matrix->n, matrix->n);
+    LOG_INFO(g_logger, "Операция умножения матрицы %zux%zu на скаляр выполнена успешно", matrix->n, matrix->n);
     return result;
 }
 
 void matrix_print(const Matrix* matrix)
 {
     if (!matrix) {
-        LOG_ERROR("Попытка печати несуществующей матрицы!");
+        LOG_ERROR(g_logger, "Попытка печати несуществующей матрицы!");
         return;
     }
 
     if (matrix->n == 0) {
-        LOG_INFO("Печать пустой матрицы (0x0)");
+        LOG_INFO(g_logger, "Печать пустой матрицы (0x0)");
         printf("\n");
     }
 
@@ -170,7 +170,7 @@ void matrix_print(const Matrix* matrix)
     }
 
     else {
-        LOG_INFO("Печать матрицы %zux%zu", matrix->n, matrix->n);
+        LOG_INFO(g_logger, "Печать матрицы %zux%zu", matrix->n, matrix->n);
         printf("Матрица %zux%zu:\n", matrix->n, matrix->n);
         for (size_t i = 0; i < matrix->n; i++)
         {
@@ -189,7 +189,7 @@ void matrix_print(const Matrix* matrix)
 void matrix_destroy(Matrix* matrix)
 {
     if (!matrix) {
-        LOG_ERROR("Попытка уничтожить несуществующую матрицу!");
+        LOG_ERROR(g_logger, "Попытка уничтожить несуществующую матрицу!");
         return;
     }
 
@@ -197,7 +197,7 @@ void matrix_destroy(Matrix* matrix)
         matrix->type->destroy(matrix_at_i(matrix, i));
     }
 
-    LOG_INFO("Матрица %zux%zu успешно уничтожена", matrix->n, matrix->n);
+    LOG_INFO(g_logger, "Матрица %zux%zu успешно уничтожена", matrix->n, matrix->n);
     free(matrix->data);
     free(matrix);
 }
@@ -206,28 +206,27 @@ void matrix_set(Matrix* matrix, const size_t row, const size_t col, const void* 
 {
     if (!matrix || row >= matrix->n || col >= matrix->n)
     {
-        LOG_ERROR("Возникла ошибка при установке значения матрицы! (row=%zu, col=%zu, n=%zu)", row, col, matrix ? matrix->n : 0);
+        LOG_ERROR(g_logger, "Возникла ошибка при установке значения матрицы! (row=%zu, col=%zu, n=%zu)", row, col, matrix ? matrix->n : 0);
         return;
     }
-    matrix->type->destroy(matrix_at_ij(matrix, row, col));
 
     void* element = matrix_at_ij(matrix, row, col);
     void* new_element = matrix->type->clone(value);
     if (!new_element)
     {
-        LOG_ERROR("Не удалось клонировать значение при установке [%zu][%zu]", row, col);
+        LOG_ERROR(g_logger, "Не удалось клонировать значение при установке [%zu][%zu]", row, col);
     }
 
     memcpy(element, new_element, matrix->type->size);
     free(new_element);
-    LOG_DEBUG("Установлено значение в матрице [%zu][%zu]", row, col);
+    LOG_DEBUG(g_logger, "Установлено значение в матрице [%zu][%zu]", row, col);
 }
 
 void* matrix_get(const Matrix* matrix, const size_t row, const size_t col)
 {
     if (!matrix || row >= matrix->n || col >= matrix->n)
     {
-        LOG_ERROR("Возникла ошибка при получении значения матрицы! (row=%zu, col=%zu, n=%zu)", row, col, matrix ? matrix->n : 0);
+        LOG_ERROR(g_logger, "Возникла ошибка при получении значения матрицы! (row=%zu, col=%zu, n=%zu)", row, col, matrix ? matrix->n : 0);
         return NULL;
     }
     return matrix_at_ij(matrix, row, col);
@@ -236,7 +235,7 @@ void* matrix_get(const Matrix* matrix, const size_t row, const size_t col)
 bool matrix_lu_decomposition(const Matrix* matrix, Matrix** out_L, Matrix** out_U)
 {
     if (!matrix || !out_L || !out_U) {
-        LOG_ERROR("Возникла ошибка при LU-разложении!");
+        LOG_ERROR(g_logger, "Возникла ошибка при LU-разложении!");
         return false;
     }
 
@@ -244,7 +243,7 @@ bool matrix_lu_decomposition(const Matrix* matrix, Matrix** out_L, Matrix** out_
     Matrix* U = matrix_create(matrix->n, matrix->type);
     if (!L || !U)
     {
-        LOG_ERROR("Не удалось создать матрицу L и U для LU-разложения!");
+        LOG_ERROR(g_logger, "Не удалось создать матрицу L и U для LU-разложения!");
         if (L) matrix_destroy(L);
         if (U) matrix_destroy(U);
         return false;
@@ -253,7 +252,7 @@ bool matrix_lu_decomposition(const Matrix* matrix, Matrix** out_L, Matrix** out_
     void *tmp = malloc(matrix->type->size);
     void *product = malloc(matrix->type->size);
     if (!tmp || !product) {
-        LOG_ERROR("Не удалось выделить временную память!");
+        LOG_ERROR(g_logger, "Не удалось выделить временную память!");
         free(tmp);
         free(product);
         return false;

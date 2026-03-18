@@ -1,54 +1,23 @@
-#include "Логирование/logger.h"
-#include "Tests/unit_tests.h"
-#include "Tests/benchmark_tests.h"
-#include "CLI/cli.h"
-
+#include "src/logging/logger.h"
+#include "tests/unit_tests.h"
 #include <stdio.h>
 #include <windows.h>
 
-void clearInputBuffer(void)
-{
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
-}
+Logger *g_logger = NULL;
 
-int main(const int argc, char* argv[]) {
-    SetConsoleCP(CP_UTF8);
+int main() {
     SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
 
-    if (!logger_init("matrix.log", LOG_DEBUG)) {
-        fprintf(stderr, "Не удалось инициализировать логер.\n");
+    g_logger = logger_create(NULL, LOG_DEBUG, 1);
+    if (!g_logger) {
+        fprintf(stderr, "Не удалось создать логгер\n");
         return 1;
     }
+    LOG_DEBUG(g_logger, "Программа запущена");
 
-    // CLI-режим для Python-сервиса если передано много аргументов
-    if (argc > 1) {
-        int result = cli_run(argc, argv);
-        logger_close();
-        return result;
-    }
+    run_all_tests();
 
-    printf("Выберите режим тестирования\n");
-    printf("1. UNIT-тесты\n");
-    printf("2. Benchmarks LU\n");
-
-    int choice;
-    printf("Ваш выбор: ");
-    scanf("%d", &choice);
-
-    switch (choice)
-    {
-        case 1:
-            unit_tests();
-            getchar();
-            break;
-        case 2:
-            test_lu_benchmark_with_html();
-            break;
-        default: break;
-    }
-
-    LOG_INFO("Программа завершила работу");
-    logger_close();
+    logger_destroy(g_logger);
     return 0;
 }

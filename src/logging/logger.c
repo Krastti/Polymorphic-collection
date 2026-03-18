@@ -1,116 +1,68 @@
 #include "logger.h"
-
 #include <stdarg.h>
-#include <stdio.h>
-#include <time.h>
 #include <stdlib.h>
+#include <time.h>
 
-static FILE* _log_file = NULL;
-static LogLevel _current_level = LOG_INFO;
-static bool _initialized = false;
-static bool _log_to_console = false;
+static const char *LEVEL_COLORS[] = {
+    "\033[36m",
+    "\033[32m",
+    "\033[33m",
+    "\033[31m"
+};
+static const char *COLOR_RESET = "\033[0m";
 
-static const char* _level_to_string(LogLevel level) {
-    switch (level) {
-        case LOG_DEBUG: return "DEBUG";
-        case LOG_INFO: return "INFO";
-        case LOG_WARN: return "WARN";
-        case LOG_ERROR: return "ERROR";
-        default: return "UNKNOWN";
+static const char *LEVEL_NAMES[] = {
+    "DEBUG", "INFO", "WARN", "ERROR"
+};
+
+Logger *logger_create(const char *filepath, const LogLevel min_level, const int use_color) {
+    Logger *logger = (Logger *)malloc(sizeof(Logger));
+    if (!logger) return NULL;
+
+    if (filepath) {
+        logger->output = fopen(filepath, "a");
+        if (!logger->output) {
+            free(logger);
+            return NULL;
+        }
+        logger->use_color = 0;
+    } else {
+        logger->output = stderr;
+        logger->use_color = use_color;
     }
+
+    logger->min_level = min_level;
+    return logger;
 }
 
-static void _get_timestamp(char* buffer, size_t size) {
+void logger_destroy(Logger *logger) {
+    if (!logger) return;
+
+    if (logger->output && logger->output != stderr && logger->output != stdout) {
+        fclose(logger->output);
+    }
+    free(logger);
+}
+
+void logger_log(Logger *logger, const LogLevel level, const char *file, const int line, const char *fmt, ...) {
+    if (!logger || level < logger->min_level) return;
+
     time_t now = time(NULL);
-    struct tm* t = localtime(&now);
-    strftime(buffer, size, "%Y-%m-%d %H:%M:%S", t);
-}
+    struct tm *tm_info = localtime(&now);
+    char time_buf[20];
+    strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", tm_info);
 
-bool logger_init(const char* filename, LogLevel level)
-{
-    if (_initialized) {
-        logger_close();
+    if (logger->use_color) {
+        fprintf(logger->output, "%s[%s] [%s] %s:%d — %s", LEVEL_COLORS[level], LEVEL_NAMES[level], time_buf, file, line, COLOR_RESET);
+    } else {
+        fprintf(logger->output, "[%s] [%s] %s:%d — ", LEVEL_NAMES[level], time_buf, file, line);
     }
-
-    _current_level = level;
-
-    if (filename != NULL) {
-        _log_file = fopen(filename, "a");
-
-        if (_log_file == NULL) {
-            fprintf(stderr, "Неудалось открыть файл %s\n", filename);
-            return false;
-        }
-    }
-
-    _initialized = true;
-    LOG_INFO("Логирование инициализировано. Level: %s", _level_to_string(level));
-    return true;
-}
-
-void logger_close(void)
-{
-    if (_log_file != NULL)
-    {
-        fclose(_log_file);
-        _log_file = NULL;
-    }
-    _initialized = false;
-}
-
-void logger_set_level(LogLevel level) {
-    _current_level = level;
-}
-
-void _log_write(LogLevel level, const char* file, int line, char* format, ...)
-{
-    if (!_initialized || level < _current_level){return;}
-
-    char timestamp[32];
-    _get_timestamp(timestamp, sizeof(timestamp));
-
-    const char* filename = file;
-    for (const char* p = file; *p; p++) {
-        if (*p == '/' || *p == '\\') {
-            filename = p + 1;
-        }
-    }
-
-    char header[256];
-    snprintf(header, sizeof(header), "%s [%s] %s:%d ", timestamp, _level_to_string(level), filename, line);
 
     va_list args;
-    va_start(args, format);
-    if (_log_to_console)
-    {
-        FILE* out = (level >= LOG_WARN) ? stderr : stdout;
-        fprintf(out, "%s", header);
-
-        va_list args_copy;
-        va_copy(args_copy, args);
-        vfprintf(out, format, args_copy);
-        va_end(args_copy);
-
-        fprintf(out, "\n");
-        fflush(out);
-    }
-
-    if (_log_file != NULL)
-    {
-        fprintf(_log_file, "%s", header);
-        va_start(args, format);
-        vfprintf(_log_file, format, args);
-        va_end(args);
-        fprintf(_log_file, "\n");
-        fflush(_log_file);
-    }
+    va_start(args, fmt);
+    vfprintf(logger->output, fmt, args);
     va_end(args);
-}
 
-LogLevel logger_get_level(void) {
-    return _current_level;
-}
-
-void logger_enable_console(bool enable) {
-    _log_to_console = enable;
+    fprintf(logger->output, "\n");
+    fflush(logger->output);
 }

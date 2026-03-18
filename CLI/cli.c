@@ -1,7 +1,7 @@
 #include "cli.h"
-#include "../Matrix/matrix.h"
-#include "../Типы данных/double_types.h"
-#include "../Типы данных/complex_types.h"
+#include "../matrix/matrix.h"
+#include "../types_info/double_types.h"
+#include "../types_info/complex_types.h"
 #include "../LU-разложение/lu_decomposition.h"
 
 #include <stdio.h>

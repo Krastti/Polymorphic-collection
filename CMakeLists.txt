@@ -8,22 +8,15 @@ if(MINGW)
 endif()
 
 add_executable(LaboratoryWork1 main.c
-        "Типы данных/double_types.c"
-        "Типы данных/double_types.h"
-        "Типы данных/complex_types.c"
-        "Типы данных/complex_types.h"
-        Matrix/matrix.c
-        Matrix/matrix.h
-        Tests/unit_tests.c
-        Tests/unit_tests.h
-        Логирование/logger.c
-        Логирование/logger.h
-        LU-разложение/lu_decomposition.h
-        LU-разложение/lu_decomposition.c
-        LU-разложение/lu_benchmark.h
-        LU-разложение/lu_benchmark.c
-        LU-разложение/lu_benchmark_plot.c
-        Tests/benchmark_tests.c
-        Tests/benchmark_tests.h
-        CLI/cli.c
+        "src/types_info/double_type.c"
+        "src/types_info/double_type.h"
+        "src/types_info/complex_type.c"
+        "src/types_info/complex_type.h"
+        "src/types_info/field_info.h"
+        src/matrix/matrix.c
+        src/matrix/matrix.h
+        tests/unit_tests.c
+        tests/unit_tests.h
+        src/logging/logger.c
+        src/logging/logger.h
 )

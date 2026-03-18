@@ -533,7 +533,9 @@ void run_all_tests(void) {
 
     if (tests_run == tests_passed) {
       printf("\nВсе тесты пройдены. Нажмите чтобы продолжить\n");
+        getchar();
     } else {
       printf("\nНе все тесты прошли проверку. Нажмите чтобы продолжить");
+        getchar();
     }
 }

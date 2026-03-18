@@ -7,7 +7,7 @@ import threading
 import webbrowser
 
 _BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-_WEB_DIR     = os.path.join(_BASE_DIR, 'Web')
+_WEB_DIR     = os.path.join(_BASE_DIR, 'web')
 _EXE_NAME    = 'LaboratoryWork1.exe' if sys.platform == 'win32' else 'LaboratoryWork1'
 _DEFAULT_EXE = os.path.join(_BASE_DIR, 'cmake-build-debug', _EXE_NAME)
 
@@ -131,7 +131,7 @@ def api_health():
     })
 
 
-# ── Статические файлы из папки Web/ ───────────────────────────────────
+# ── Статические файлы из папки web/ ───────────────────────────────────
 
 @app.route('/', methods=['GET'])
 def index():
@@ -144,10 +144,10 @@ def static_files(filename):
 
 if __name__ == '__main__':
     print('=' * 60)
-    print('  Matrix Calculator Web Service')
+    print('  Matrix Calculator web Service')
     print(f'  Исполняемый файл : {MATRIX_EXECUTABLE}')
     print(f'  Файл найден      : {os.path.isfile(MATRIX_EXECUTABLE)}')
-    print(f'  Папка Web/       : {_WEB_DIR}')
+    print(f'  Папка web/       : {_WEB_DIR}')
     print('  Адрес            : http://localhost:5000')
     print('=' * 60)
     threading.Timer(10.0, open_browser).start()
