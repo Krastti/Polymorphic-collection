@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatrixCalc — Калькулятор матриц</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #05080f;
+            --panel: #0a0f1c;
+            --panel2: #0f1626;
+            --border: rgba(100,140,255,0.13);
+            --border2: rgba(100,140,255,0.22);
+            --accent: #4d7cff;
+            --accent2: #a259ff;
+            --teal: #00e5c8;
+            --green: #00e5a0;
+            --red: #ff4d6a;
+            --text: #dce6ff;
+            --muted: #4a5878;
+            --mono: 'Space Mono', monospace;
+            --sans: 'Syne', sans-serif;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Grid background ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(77,124,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(77,124,255,0.04) 1px, transparent 1px);
+            background-size: 44px 44px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Glow orbs ── */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .orb-1 { width: 500px; height: 500px; background: rgba(77,124,255,0.08); top: -150px; left: -100px; }
+        .orb-2 { width: 400px; height: 400px; background: rgba(162,89,255,0.07); top: 40%; right: -120px; }
+        .orb-3 { width: 300px; height: 300px; background: rgba(0,229,200,0.05); bottom: 0; left: 30%; }
+
+        /* ── Layout ── */
+        .wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 0 24px 60px;
+        }
+
+        /* ── Header ── */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0 28px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 36px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-mark {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -1px;
+            position: relative;
+            overflow: hidden;
+        }
+        .logo-mark::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+        }
+
+        .logo-text {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text);
+        }
+        .logo-text span { color: var(--accent); }
+
+        .logo-ver {
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            color: var(--muted);
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            padding: 2px 8px;
+            border-radius: 4px;
+            align-self: flex-end;
+            margin-bottom: 3px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--muted);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            padding: 6px 14px;
+            transition: border-color 0.3s;
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+            transition: background 0.4s, box-shadow 0.4s;
+        }
+        .status-dot.connected { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .status-dot.error { background: var(--red); }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 28px 28px 24px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.25s;
+        }
+        .card:hover { border-color: var(--border2); }
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(77,124,255,0.3), transparent);
+        }
+
+        .section-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: rgba(77,124,255,0.1);
+            border: 1px solid rgba(77,124,255,0.2);
+            border-radius: 6px;
+            padding: 4px 10px;
+            margin-bottom: 22px;
+        }
+        .section-tag::before {
+            content: '';
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+
+        /* ── Settings row ── */
+        .settings-row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .field { display: flex; flex-direction: column; gap: 8px; }
+
+        .field-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .select-wrap { position: relative; }
+
+        .form-select {
+            appearance: none;
+            background: var(--panel2);
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            color: var(--text);
+            padding: 10px 36px 10px 14px;
+            font-family: var(--sans);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            min-width: 220px;
+        }
+        .form-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(77,124,255,0.15); }
+        .select-arrow {
+            position: absolute; right: 12px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent); font-size: 0.75rem; pointer-events: none;
+        }
+
+        .size-control {
+            display: flex;
+            align-items: center;
+            background: var(--panel2);
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            overflow: hidden;
+            height: 42px;
+        }
+        .size-btn {
+            background: transparent;
+            border: none;
+            color: var(--accent);
+            width: 42px; height: 100%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-family: var(--mono);
+        }
+        .size-btn:hover { background: rgba(77,124,255,0.1); }
+        #size-display {
+            min-width: 40px;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 10px;
+            font-family: var(--sans);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 10px 22px;
+            height: 42px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(77,124,255,0.35); }
+
+        /* ── Matrices ── */
+        .matrices-layout {
+            display: grid;
+            grid-template-columns: 1fr 48px 1fr 170px;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .matrix-panel {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            transition: border-color 0.2s;
+        }
+        .matrix-panel:hover { border-color: var(--border2); }
+
+        .matrix-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .matrix-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--muted);
+            font-family: var(--mono);
+            letter-spacing: 0.5px;
+        }
+        .matrix-label em {
+            font-style: normal;
+            color: var(--teal);
+            font-size: 1.1rem;
+        }
+
+        .hint-badge {
+            font-family: var(--mono);
+            font-size: 0.62rem;
+            color: var(--muted);
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 7px;
+        }
+
+        .matrix-grid {
+            display: grid;
+            gap: 5px;
+        }
+
+        .matrix-cell {
+            width: 100%;
+            min-width: 0;
+            padding: 8px 6px;
+            text-align: center;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+        }
+        .matrix-cell::placeholder { color: var(--muted); }
+        .matrix-cell:focus {
+            outline: none;
+            border-color: var(--teal);
+            background: rgba(0,229,200,0.06);
+            box-shadow: 0 0 0 3px rgba(0,229,200,0.1);
+        }
+        .matrix-cell.result-cell {
+            background: rgba(0,229,160,0.08);
+            border-color: rgba(0,229,160,0.4);
+            color: var(--green);
+            font-weight: 700;
+            cursor: default;
+        }
+
+        /* Divider */
+        .op-divider {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 50px;
+        }
+        .op-circle {
+            width: 42px; height: 42px;
+            background: var(--panel2);
+            border: 2px solid var(--border2);
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-family: var(--mono);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent);
+            transition: all 0.3s;
+        }
+
+        /* Scalar panel */
+        .scalar-panel {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+        }
+
+        .scalar-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--muted);
+            font-family: var(--mono);
+            margin-bottom: 14px;
+        }
+
+        .scalar-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--panel);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            transition: border-color 0.15s;
+        }
+        .scalar-input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,229,200,0.1); }
+
+        .btn-random {
+            margin-top: 10px;
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-random:hover { transform: rotate(90deg) scale(1.1); box-shadow: 0 4px 14px rgba(77,124,255,0.4); }
+
+        /* ── Operations ── */
+        .ops-grid {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .op-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 18px 22px;
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: var(--muted);
+            font-family: var(--sans);
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 110px;
+            position: relative;
+            overflow: hidden;
+        }
+        .op-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            transform: scaleX(0);
+            transition: transform 0.2s;
+        }
+        .op-btn:hover { border-color: var(--border2); color: var(--text); }
+        .op-btn.active {
+            border-color: rgba(77,124,255,0.4);
+            background: rgba(77,124,255,0.1);
+            color: var(--text);
+        }
+        .op-btn.active::after { transform: scaleX(1); }
+
+        .op-icon {
+            font-size: 1.6rem;
+            line-height: 1;
+            color: var(--accent);
+        }
+        .op-name { font-size: 0.9rem; font-weight: 800; }
+        .op-formula {
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            color: var(--muted);
+        }
+        .op-btn.active .op-formula { color: var(--teal); }
+
+        .calc-row {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-calc {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            padding: 13px 36px;
+            font-size: 1rem;
+            font-weight: 800;
+            border-radius: 12px;
+            font-family: var(--sans);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: 0.3px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 20px rgba(77,124,255,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-calc::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+        }
+        .btn-calc:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(77,124,255,0.45); }
+        .btn-calc:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        .btn-arrow { font-size: 1.1rem; transition: transform 0.2s; }
+        .btn-calc:hover .btn-arrow { transform: translateX(4px); }
+
+        /* ── Result ── */
+        .error-bar {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,77,106,0.08);
+            border: 1px solid rgba(255,77,106,0.25);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            color: var(--red);
+            margin-bottom: 16px;
+        }
+        .error-bar.show { display: flex; animation: shake 0.4s ease; }
+        .error-bar::before { content: '⚠'; font-size: 1rem; }
+
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        .result-box {
+            background: #050810;
+            border: 1px dashed rgba(0,229,160,0.2);
+            border-radius: 14px;
+            padding: 24px;
+            min-height: 120px;
+            position: relative;
+            transition: border-style 0.3s, border-color 0.3s;
+        }
+        .result-box.has-result {
+            border-style: solid;
+            border-color: rgba(0,229,160,0.3);
+        }
+
+        .placeholder-text {
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            color: var(--muted);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .result-grid {
+            display: grid;
+            gap: 5px;
+            margin-bottom: 18px;
+        }
+
+        .result-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .meta-item {
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+        .meta-item b { color: var(--teal); font-weight: 600; }
+
+        /* Spinner */
+        .spinner {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: rgba(5,8,16,0.8);
+            backdrop-filter: blur(4px);
+        }
+        .spinner.show { display: flex; }
+        .spin-ring {
+            width: 36px; height: 36px;
+            border: 2px solid var(--border2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 32px 0 0;
+            border-top: 1px solid var(--border);
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+        footer a { color: var(--accent); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* Responsive */
+        @media (max-width: 860px) {
+            .matrices-layout { grid-template-columns: 1fr; }
+            .op-divider { display: none; }
+        }
+        @media (max-width: 600px) {
+            header { flex-direction: column; gap: 16px; }
+            .settings-row { flex-direction: column; align-items: stretch; }
+            .btn-calc { width: 100%; justify-content: center; }
+            .calc-row { justify-content: stretch; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="wrap">
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <div class="logo-mark">M×</div>
+            <div>
+                <div class="logo-text">Matrix<span>Calc</span></div>
+            </div>
+            <div class="logo-ver">v2.0.0</div>
+        </div>
+        <div class="status-pill" id="status-indicator">
+            <div class="status-dot" id="status-dot"></div>
+            <span id="status-text">Проверка...</span>
+        </div>
+    </header>
+
+    <!-- Settings -->
+    <div class="card">
+        <div class="section-tag">Параметры</div>
+        <div class="settings-row">
+            <div class="field">
+                <label class="field-label">Тип элементов</label>
+                <div class="select-wrap">
+                    <select id="matrix-type" class="form-select">
+                        <option value="double">Вещественные (double)</option>
+                        <option value="complex">Комплексные (complex)</option>
+                    </select>
+                    <span class="select-arrow">▾</span>
+                </div>
+            </div>
+            <div class="field">
+                <label class="field-label">Размер (n×n)</label>
+                <div class="size-control">
+                    <button class="size-btn" id="size-decrease">−</button>
+                    <div id="size-display">3</div>
+                    <input type="hidden" id="matrix-size" value="3">
+                    <button class="size-btn" id="size-increase">+</button>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="apply-settings">Применить</button>
+        </div>
+    </div>
+
+    <!-- Matrices -->
+    <div class="card">
+        <div class="section-tag">Матрицы</div>
+        <div class="matrices-layout">
+            <div class="matrix-panel">
+                <div class="matrix-panel-header">
+                    <div class="matrix-label">Матрица <em>A</em></div>
+                </div>
+                <div class="matrix-grid" id="matrix-a-grid"></div>
+            </div>
+
+            <div class="op-divider">
+                <div class="op-circle" id="operation-symbol">+</div>
+            </div>
+
+            <div class="matrix-panel" id="matrix-b-panel">
+                <div class="matrix-panel-header">
+                    <div class="matrix-label">Матрица <em>B</em></div>
+                    <span class="hint-badge" id="matrix-b-hint"></span>
+                </div>
+                <div class="matrix-grid" id="matrix-b-grid"></div>
+            </div>
+
+            <div class="scalar-panel" id="scalar-section" style="display:none">
+                <div class="scalar-title">Скаляр λ</div>
+                <input type="text" class="scalar-input" id="scalar-value" placeholder="0">
+                <button class="btn-random" id="add-matrix-b" title="Случайные значения">⟳</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Operations -->
+    <div class="card">
+        <div class="section-tag">Операция</div>
+        <div class="ops-grid">
+            <button class="op-btn active" data-operation="sum">
+                <span class="op-icon">＋</span>
+                <span class="op-name">Сложение</span>
+                <span class="op-formula">A + B</span>
+            </button>
+            <button class="op-btn" data-operation="multiply">
+                <span class="op-icon">×</span>
+                <span class="op-name">Умножение</span>
+                <span class="op-formula">A × B</span>
+            </button>
+            <button class="op-btn" data-operation="scalar_multiply">
+                <span class="op-icon">λ</span>
+                <span class="op-name">Скалярное</span>
+                <span class="op-formula">λ · A</span>
+            </button>
+            <button class="op-btn" data-operation="lu">
+                <span class="op-icon">∇</span>
+                <span class="op-name">Разложение</span>
+                <span class="op-formula">LU(A)</span>
+            </button>
+        </div>
+        <div class="calc-row">
+            <button class="btn-calc" id="calculate-btn">
+                Вычислить
+                <span class="btn-arrow">→</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Result -->
+    <div class="card">
+        <div class="section-tag">Результат</div>
+        <div class="error-bar" id="error-message"></div>
+        <div class="result-box" id="result-output">
+            <div class="placeholder-text" id="result-placeholder">// Результат появится здесь...</div>
+            <div class="result-grid" id="result-grid" style="display:none"></div>
+            <div class="result-meta" id="result-info"></div>
+            <div class="spinner" id="loading-spinner">
+                <div class="spin-ring"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Matrix Calculator API v2.0.0 &nbsp;|&nbsp; <a href="/docs">Документация API</a>
+    </footer>
+</div>
+
+<script>
+const API_BASE = '';
+let currentSize = 3;
+let currentType = 'double';
+let currentOperation = 'sum';
+
+const el = {
+    matrixType: document.getElementById('matrix-type'),
+    matrixSize: document.getElementById('matrix-size'),
+    sizeDisplay: document.getElementById('size-display'),
+    sizeIncrease: document.getElementById('size-increase'),
+    sizeDecrease: document.getElementById('size-decrease'),
+    operationCards: document.querySelectorAll('.op-btn'),
+    operationSymbol: document.getElementById('operation-symbol'),
+    scalarSection: document.getElementById('scalar-section'),
+    scalarValue: document.getElementById('scalar-value'),
+    matrixAGrid: document.getElementById('matrix-a-grid'),
+    matrixBGrid: document.getElementById('matrix-b-grid'),
+    matrixBPanel: document.getElementById('matrix-b-panel'),
+    matrixBHint: document.getElementById('matrix-b-hint'),
+    addMatrixB: document.getElementById('add-matrix-b'),
+    applySettings: document.getElementById('apply-settings'),
+    calculateBtn: document.getElementById('calculate-btn'),
+    resultGrid: document.getElementById('result-grid'),
+    resultInfo: document.getElementById('result-info'),
+    resultPlaceholder: document.getElementById('result-placeholder'),
+    resultOutput: document.getElementById('result-output'),
+    errorMessage: document.getElementById('error-message'),
+    statusDot: document.getElementById('status-dot'),
+    statusText: document.getElementById('status-text'),
+    loadingSpinner: document.getElementById('loading-spinner')
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    checkHealth();
+    setupEventListeners();
+    applySettings();
+});
+
+async function checkHealth() {
+    try {
+        const r = await fetch(`${API_BASE}/health`);
+        const d = await r.json();
+        if (d.status === 'ok') {
+            el.statusDot.className = 'status-dot connected';
+            el.statusText.textContent = 'Сервер готов';
+        } else {
+            el.statusDot.className = 'status-dot error';
+            el.statusText.textContent = 'Ограниченный режим';
+        }
+    } catch {
+        el.statusDot.className = 'status-dot error';
+        el.statusText.textContent = 'Недоступен';
+    }
+}
+
+function setupEventListeners() {
+    el.applySettings.addEventListener('click', applySettings);
+    el.calculateBtn.addEventListener('click', calculate);
+    el.addMatrixB.addEventListener('click', fillRandom);
+
+    el.sizeIncrease.addEventListener('click', () => {
+        const v = parseInt(el.matrixSize.value) || 3;
+        if (v < 10) { el.matrixSize.value = v + 1; el.sizeDisplay.textContent = v + 1; applySettings(); }
+    });
+    el.sizeDecrease.addEventListener('click', () => {
+        const v = parseInt(el.matrixSize.value) || 3;
+        if (v > 1) { el.matrixSize.value = v - 1; el.sizeDisplay.textContent = v - 1; applySettings(); }
+    });
+    el.matrixType.addEventListener('change', () => { currentType = el.matrixType.value; applySettings(); });
+    el.operationCards.forEach(card => {
+        card.addEventListener('click', () => {
+            el.operationCards.forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            currentOperation = card.dataset.operation;
+            updateOperationUI();
+        });
+    });
+}
+
+function updateOperationUI() {
+    const symbols = { sum:'+', multiply:'×', scalar_multiply:'λ', lu:'∇' };
+    el.operationSymbol.textContent = symbols[currentOperation] || '+';
+    if (currentOperation === 'scalar_multiply') {
+        el.scalarSection.style.display = 'block';
+        el.matrixBPanel.style.opacity = '0.4';
+        el.matrixBHint.textContent = 'не нужна';
+    } else if (currentOperation === 'lu') {
+        el.scalarSection.style.display = 'none';
+        el.matrixBPanel.style.opacity = '0.4';
+        el.matrixBHint.textContent = 'не нужна для LU';
+    } else {
+        el.scalarSection.style.display = 'none';
+        el.matrixBPanel.style.opacity = '1';
+        el.matrixBHint.textContent = '';
+    }
+}
+
+function applySettings() {
+    currentSize = Math.max(1, Math.min(10, parseInt(el.matrixSize.value) || 3));
+    currentType = el.matrixType.value;
+    el.sizeDisplay.textContent = currentSize;
+    createMatrixGrid(el.matrixAGrid, currentSize, 'A');
+    createMatrixGrid(el.matrixBGrid, currentSize, 'B');
+    el.resultGrid.style.display = 'none';
+    el.resultGrid.innerHTML = '';
+    el.resultInfo.innerHTML = '';
+    el.resultPlaceholder.style.display = 'block';
+    el.resultOutput.classList.remove('has-result');
+    hideError();
+    updateOperationUI();
+}
+
+function createMatrixGrid(container, size, label) {
+    container.innerHTML = '';
+    container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+    for (let i = 0; i < size * size; i++) {
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'matrix-cell';
+        inp.dataset.index = i;
+        inp.dataset.matrix = label;
+        inp.placeholder = currentType === 'complex' ? 'a, b' : '0';
+        container.appendChild(inp);
+    }
+}
+
+function getMatrixData(label) {
+    return [...document.querySelectorAll(`.matrix-cell[data-matrix="${label}"]`)].map(inp => {
+        const v = inp.value.trim();
+        return currentType === 'complex' ? parseComplexValue(v) : (parseFloat(v) || 0);
+    });
+}
+
+function parseComplexValue(v) {
+    if (!v) return { real: 0, imag: 0 };
+    if (v.includes('{')) {
+        try { const o = JSON.parse(v.replace(/'/g,'"')); return { real: parseFloat(o.real)||0, imag: parseFloat(o.imag)||0 }; }
+        catch { return { real:0, imag:0 }; }
+    }
+    const p = v.split(',').map(x => parseFloat(x.trim()) || 0);
+    return { real: p[0]||0, imag: p[1]||0 };
+}
+
+function fillRandom() {
+    document.querySelectorAll('.matrix-cell').forEach(inp => {
+        if (currentType === 'complex') {
+            inp.value = `${(Math.random()*10-5).toFixed(2)}, ${(Math.random()*10-5).toFixed(2)}`;
+        } else {
+            inp.value = (Math.random()*10-5).toFixed(2);
+        }
+    });
+}
+
+async function calculate() {
+    const matrixA = getMatrixData('A');
+    const matrixB = (currentOperation !== 'scalar_multiply' && currentOperation !== 'lu') ? getMatrixData('B') : null;
+    const scalar = currentOperation === 'scalar_multiply' ? el.scalarValue.value : null;
+    if (currentOperation === 'scalar_multiply' && !scalar) { showError('Введите значение скаляра'); return; }
+    const endpoints = { sum:'/api/sum', multiply:'/api/multiply', scalar_multiply:'/api/scalar_multiply', lu:'/api/lu' };
+    const body = { type: currentType, n: currentSize, matrixA };
+    if (matrixB) body.matrixB = matrixB;
+    if (scalar) body.scalar = parseComplexValue(scalar);
+    try {
+        setLoading(true); hideError();
+        const r = await fetch(`${API_BASE}${endpoints[currentOperation]}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const result = await r.json();
+        if (!r.ok) throw new Error(result.detail || 'Ошибка вычисления');
+        if (result.success) displayResult(result);
+        else showError(result.error || 'Неизвестная ошибка');
+    } catch (e) {
+        showError(e.message);
+    } finally {
+        setLoading(false);
+    }
+}
+
+function displayResult(result) {
+    el.resultPlaceholder.style.display = 'none';
+    el.resultGrid.style.display = 'grid';
+    el.resultOutput.classList.add('has-result');
+    const opNames = { sum:'Сложение', multiply:'Умножение', scalar_multiply:'Умножение на скаляр', lu:'LU-разложение' };
+    el.resultInfo.innerHTML = `
+        <div class="meta-item"><b>Операция</b> ${opNames[result.operation]||result.operation}</div>
+        <div class="meta-item"><b>Тип</b> ${result.type}</div>
+        <div class="meta-item"><b>Размер</b> ${result.size}×${result.size}</div>`;
+    el.resultGrid.innerHTML = '';
+    el.resultGrid.style.gridTemplateColumns = `repeat(${result.size}, 1fr)`;
+    result.result.forEach(v => {
+        const cell = document.createElement('div');
+        cell.className = 'matrix-cell result-cell';
+        cell.textContent = result.type === 'complex'
+            ? `${v.real.toFixed(3)}${v.imag >= 0 ? '+' : ''}${v.imag.toFixed(3)}i`
+            : (typeof v === 'number' ? v.toFixed(4) : v);
+        el.resultGrid.appendChild(cell);
+    });
+}
+
+function showError(msg) {
+    el.errorMessage.textContent = msg;
+    el.errorMessage.classList.add('show');
+    setTimeout(hideError, 5000);
+}
+function hideError() { el.errorMessage.classList.remove('show'); }
+
+function setLoading(on) {
+    el.calculateBtn.disabled = on;
+    el.applySettings.disabled = on;
+    if (on) el.loadingSpinner.classList.add('show');
+    else el.loadingSpinner.classList.remove('show');
+}
+
+setInterval(checkHealth, 60000);
+</script>
+</body>
+</html>

@@ -51,23 +51,25 @@ if(WIN32)
     )
 endif()
 
-add_executable(LaboratoryWork1
-        src/main.c
-        tests/unit_tests.c
-        tests/unit_tests.h
-        ${LIB_SOURCES}
-)
+if(BUILD_TESTS)
+    add_executable(LaboratoryWork1
+            src/main.c
+            tests/unit_tests.c
+            tests/unit_tests.h
+            ${LIB_SOURCES}
+    )
 
-target_compile_definitions(LaboratoryWork1 PRIVATE API_EXPORTS)
+    target_compile_definitions(LaboratoryWork1 PRIVATE API_EXPORTS)
 
-target_include_directories(LaboratoryWork1 PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/api
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/matrix
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/types_info
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/logging
-)
+    target_include_directories(LaboratoryWork1 PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/api
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/matrix
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/types_info
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/logging
+    )
 
-if(MINGW)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc")
+    if(MINGW)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc")
+    endif()
 endif()
