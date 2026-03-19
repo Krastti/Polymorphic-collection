@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define COMPLEX_EPSILON 1e-9
+
 Complex make_complex(const double real, const double imag) {
     Complex c;
     c.real = real;
@@ -56,7 +58,13 @@ static void c_div(const void* a, const void* b, void* res) {
     const Complex* c2 = (const Complex*)b;
     Complex* r = (Complex*)res;
     double denom = c2->real * c2->real + c2->imag * c2->imag;
-    if (denom == 0) return;
+
+    if (denom < COMPLEX_EPSILON) {
+        r->real = 0.0;
+        r->imag = 0.0;
+        return;
+    }
+
     r->real = (c1->real * c2->real + c1->imag * c2->imag) / denom;
     r->imag = (c1->imag * c2->real - c1->real * c2->imag) / denom;
 }
@@ -84,7 +92,13 @@ static void c_frac(const void* elem, void* res) {
     const Complex* c = (const Complex*)elem;
     Complex* r = (Complex*)res;
     double denom = c->real * c->real + c->imag * c->imag;
-    if (denom == 0.0) return;
+
+    if (denom < COMPLEX_EPSILON) {
+      r->real = 0.0;
+      r->imag = 0.0;
+      return;
+    }
+
     r->real = c->real / denom;
     r->imag = -c->imag / denom;
 }

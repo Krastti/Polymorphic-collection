@@ -1,5 +1,5 @@
 #include "matrix.h"
-#include "../logging/logger.h"
+#include "logging/logger.h"
 
 #include <stdio.h>
 #include <stdlib.h>

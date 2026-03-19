@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
+
+#define DOUBLE_EPSILON 1e-9
 
 static void* d_clone(const void* src) {
     double* p = malloc(sizeof(double));
@@ -28,7 +31,10 @@ static void d_mul(const void* a, const void* b, void* res) {
 }
 
 static void d_div(const void* a, const void* b, void* res) {
-    if (*(double*)b == 0.0) return;
+    if (fabs(*(const double*)b) < DOUBLE_EPSILON) {
+        *(double*)res = 0.0;
+        return;
+    }
     *(double*)res = *(const double*)a / *(const double*)b;
 }
 
@@ -40,7 +46,10 @@ static void d_neg(const void* elem, void* res) {
 }
 
 static void d_frac(const void* elem, void* res) {
-    if (*(const double*)elem == 0.0) return;
+    if (fabs(*(const double*)elem) < DOUBLE_EPSILON) {
+        *(double*)res = 0.0;
+        return;
+    }
     *(double*)res = 1.0 / *(const double*)elem;
 }
 

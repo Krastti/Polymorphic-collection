@@ -3,6 +3,8 @@ project(LaboratoryWork1 C)
 
 set(CMAKE_C_STANDARD 11)
 
+option(BUILD_TESTS "Build unit tests" ON)
+
 if(WIN32)
     add_definitions(-D_API_EXPORTS)
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
@@ -27,7 +29,35 @@ set(LIB_SOURCES
 
 add_library(matrix_lib SHARED ${LIB_SOURCES})
 
-add_executable(LaboratoryWork1 src/main.c tests/unit_tests.c tests/unit_tests.h ${LIB_SOURCES})
+target_include_directories(matrix_lib PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/api
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/matrix
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/types_info
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/logging
+)
+
+target_compile_definitions(matrix_lib PRIVATE API_EXPORTS)
+
+set_target_properties(matrix_lib PROPERTIES
+        C_VISIBILITY_PRESET default
+        VISIBILITY_INLINES_HIDDEN OFF
+)
+
+if(WIN32)
+    set_target_properties(matrix_lib PROPERTIES
+            PREFIX ""
+            WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+endif()
+
+add_executable(LaboratoryWork1
+        src/main.c
+        tests/unit_tests.c
+        tests/unit_tests.h
+)
+
+target_link_libraries(LaboratoryWork1 PRIVATE matrix_lib)
 
 if(MINGW)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc")

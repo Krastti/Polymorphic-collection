@@ -1,7 +1,7 @@
 #include "api.h"
-#include "../matrix/matrix.h"
-#include "../types_info/double_type.h"
-#include "../types_info/complex_type.h"
+#include "matrix/matrix.h"
+#include "types_info/double_type.h"
+#include "types_info/complex_type.h"
 #include <string.h>
 
 static const FieldInfo* get_type_by_id(int type_id) {

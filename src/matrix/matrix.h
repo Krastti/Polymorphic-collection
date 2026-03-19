@@ -1,7 +1,7 @@
 #ifndef LABORATORYWORK1_DOUBLE_MATRIX_H
 #define LABORATORYWORK1_DOUBLE_MATRIX_H
 #include <stdbool.h>
-#include "../types_info/field_info.h"
+#include "types_info/field_info.h"
 
 typedef struct
 {
