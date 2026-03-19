@@ -7,10 +7,11 @@ on:
     branches: [ main, master ]
 
 jobs:
+  # ========== LINUX ==========
   linux-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
@@ -32,15 +33,16 @@ jobs:
           valgrind --leak-check=full --error-exitcode=1 ./LaboratoryWork1
 
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-build
           path: build/
 
+  # ========== WINDOWS ==========
   windows-build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Configure
         run: cmake -B build
@@ -52,15 +54,16 @@ jobs:
         run: cd build && ctest -C Release --output-on-failure
 
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-build
           path: build/
 
+  # ========== MACOS ==========
   macos-build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: brew install cmake
