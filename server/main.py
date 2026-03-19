@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from matrix_lib import matrix_lib
 import uvicorn
 
-from config import HOST, PORT, WEB_DIR, MATRIX_LIBRARY_PATH
+from config import HOST, PORT, WEB_DIR, LIB_PATH
 from api import router
 
 logger = logging.getLogger(__name__)
@@ -93,8 +93,8 @@ def open_browser():
 if __name__ == '__main__':
     print('=' * 60)
     print('  Matrix Calculator Web Service (FastAPI)')
-    print(f'  Библиотека         : {MATRIX_LIBRARY_PATH}')
-    print(f'  Файл найден        : {os.path.isfile(MATRIX_LIBRARY_PATH)}')
+    print(f'  Библиотека         : {LIB_PATH}')
+    print(f'  Файл найден        : {os.path.isfile(LIB_PATH)}')
     print(f'  Папка web/         : {WEB_DIR}')
     print(f'  Адрес              : http://localhost:{PORT}')
     print(f'  Документация       : http://localhost:{PORT}/docs')
