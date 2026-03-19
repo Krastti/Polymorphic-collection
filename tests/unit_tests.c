@@ -59,6 +59,7 @@ static void test_create_1x1(void) {
 static void test_create_0x0(void) {
     Matrix *matrix = matrix_create(0, get_double_type_info());
     assert_not_null(matrix, "test_create_0x0");
+    matrix_destroy(matrix);
 }
 
 static void test_create_null_type(void) {
@@ -376,6 +377,7 @@ static void test_print_null_matrix(void) {
 static void test_print_0x0_matrix(void) {
     Matrix *matrix = matrix_create(0, get_double_type_info());
     assert_not_null(matrix, "test_print_0x0_matrix");
+    matrix_destroy(matrix);
 }
 
 static void test_print_1x1_matrix(void) {
