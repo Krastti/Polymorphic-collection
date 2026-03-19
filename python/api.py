@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException
 import asyncio
 import os
-
 from models import MatrixRequest, MatrixResponse
 from matrix_lib import matrix_lib
 from utils import parse_matrix_value, format_result_data
@@ -12,12 +11,9 @@ router = APIRouter()
 
 @router.get("/health", tags=["System"])
 async def health_check():
-    """
-    Проверка состояния сервера и загруженности библиотеки
-    """
+    """Проверка состояния сервера и загруженности библиотеки"""
     lib_loaded = matrix_lib is not None and matrix_lib.lib is not None
     lib_exists = os.path.exists(LIB_PATH)
-
     return {
         "status": "ok" if lib_loaded else "degraded",
         "server": "running",
@@ -29,17 +25,18 @@ async def health_check():
         "version": "2.0.0"
     }
 
+
 async def run_in_executor(func, *args):
     """Запускает функцию в пуле потоков для неблокирующего выполнения"""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, func, *args)
+
 
 @router.post("/api/sum", response_model=MatrixResponse, tags=["Operations"])
 async def api_sum(request: MatrixRequest):
     ok, err = request.check_size()
     if not ok:
         raise HTTPException(status_code=400, detail=err)
-
     if request.matrixB is None:
         raise HTTPException(status_code=400, detail="matrixB обязательна для операции сложения")
 
@@ -47,7 +44,6 @@ async def api_sum(request: MatrixRequest):
         n = request.n
         matrix_type = MatrixType.from_string(request.type)
 
-        # Создаем матрицы в C
         m1 = await run_in_executor(matrix_lib.create_matrix, n, matrix_type)
         m2 = await run_in_executor(matrix_lib.create_matrix, n, matrix_type)
 
@@ -92,7 +88,6 @@ async def api_multiply(request: MatrixRequest):
     ok, err = request.check_size()
     if not ok:
         raise HTTPException(status_code=400, detail=err)
-
     if request.matrixB is None:
         raise HTTPException(status_code=400, detail="matrixB обязательна для операции умножения")
 
@@ -144,7 +139,6 @@ async def api_scalar_multiply(request: MatrixRequest):
     ok, err = request.check_size()
     if not ok:
         raise HTTPException(status_code=400, detail=err)
-
     if request.scalar is None:
         raise HTTPException(status_code=400, detail="Поле 'scalar' обязательно")
 
@@ -155,30 +149,21 @@ async def api_scalar_multiply(request: MatrixRequest):
         sr, si = parse_matrix_value(request.scalar, request.type)
 
         m1 = await run_in_executor(matrix_lib.create_matrix, n, matrix_type)
-        m2 = await run_in_executor(matrix_lib.create_matrix, n, matrix_type)
 
-        if not m1 or not m2:
-            raise HTTPException(status_code=500, detail="Не удалось создать матрицы")
+        if not m1:
+            raise HTTPException(status_code=500, detail="Не удалось создать матрицу")
 
-        # Заполняем первую матрицу данными
         for i in range(n):
             for j in range(n):
                 idx = i * n + j
                 r, im = parse_matrix_value(request.matrixA[idx], request.type)
                 await run_in_executor(matrix_lib.set_value, m1, i, j, r, im)
 
-        # Заполняем вторую матрицу скаляром (диагональная)
-        for i in range(n):
-            for j in range(n):
-                if i == j:
-                    await run_in_executor(matrix_lib.set_value, m2, i, j, sr, si)
-                else:
-                    await run_in_executor(matrix_lib.set_value, m2, i, j, 0.0, 0.0)
-
-        result_ptr = await run_in_executor(matrix_lib.multiply_matrices, m1, m2)
+        result_ptr = await run_in_executor(
+            matrix_lib.scalar_multiply_matrix, m1, sr, si
+        )
 
         await run_in_executor(matrix_lib.destroy_matrix, m1)
-        await run_in_executor(matrix_lib.destroy_matrix, m2)
 
         if not result_ptr:
             raise HTTPException(status_code=500, detail="Ошибка умножения на скаляр")
@@ -198,12 +183,3 @@ async def api_scalar_multiply(request: MatrixRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/api/lu", response_model=MatrixResponse, tags=["Operations"])
-async def api_lu(request: MatrixRequest):
-    return MatrixResponse(
-        success=False,
-        operation="lu",
-        error="LU-разложение временно недоступно. Требуется обновление API библиотеки."
-    )

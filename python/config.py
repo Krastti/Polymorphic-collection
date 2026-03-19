@@ -11,7 +11,7 @@ MATRIX_LIBRARY_PATH = os.environ.get('MATRIX_LIB', LIB_PATH)
 
 HOST = '0.0.0.0'
 PORT = 8000
-DEBUG = False
+DEBUG = True
 
 MAX_MATRIX_SIZE = 500
 

@@ -52,6 +52,30 @@ API_EXPORT void api_matrix_set(void* matrix, size_t row, size_t col, double real
   }
 }
 
+API_EXPORT void* api_matrix_multiply_by_scalar(void* matrix, double scalar_real, double scalar_imag){
+  if (!matrix) return NULL;
+  Matrix* m = (Matrix*)matrix;
+  Matrix* result = matrix_create(m->n, m->type);
+  if (!result) return NULL;
+
+  for (size_t i = 0; i < m->n; i++) {
+    for (size_t j = 0; j < m->n; j++) {
+      double real, imag;
+      api_matrix_get(matrix, i, j, &real, &imag);
+
+      if (m->type == get_double_type_info()) {
+        double res = real * scalar_real;
+        api_matrix_set(result, i, j, res, 0.0);
+      } else {
+        double res_real = real * scalar_real - imag * scalar_imag;
+        double res_imag = real * scalar_imag + imag * scalar_real;
+        api_matrix_set(result, i, j, res_real, res_imag);
+      }
+    }
+  }
+  return result;
+}
+
 API_EXPORT void api_matrix_get(void* matrix, size_t row, size_t col, double* real, double* imag) {
   Matrix* m = (Matrix*)matrix;
 

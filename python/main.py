@@ -2,6 +2,7 @@ import os
 import threading
 import webbrowser
 import atexit
+import logging
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
@@ -12,6 +13,7 @@ import uvicorn
 from config import HOST, PORT, WEB_DIR, MATRIX_LIBRARY_PATH
 from api import router
 
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Matrix Calculator API",
@@ -35,7 +37,16 @@ async def index():
     """Главная страница"""
     index_path = os.path.join(WEB_DIR, 'index.html')
     if os.path.exists(index_path):
-        return FileResponse(index_path)
+        logger.info(f"Serving index.html: {index_path}")
+        logger.info(f"File size: {os.path.getsize(index_path)} bytes")
+        return FileResponse(
+            index_path,
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
     return JSONResponse(
         status_code=404,
         content={"error": "index.html не найден"}
@@ -43,14 +54,28 @@ async def index():
 
 @app.get("/{path:path}")
 async def static_files(path: str):
-    """Обслуживание статических файлов"""
+    """Обслуживание статики с контролем кэша"""
     file_path = os.path.join(WEB_DIR, path)
+
     if os.path.exists(file_path) and os.path.isfile(file_path):
-        return FileResponse(file_path)
-    return JSONResponse(
-        status_code=404,
-        content={"error": f"Файл не найден: {path}"}
-    )
+        if path.endswith(('.html', '.htm')):
+            headers = {
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        elif path.endswith(('.css', '.js')):
+            headers = {
+                "Cache-Control": "public, max-age=300, must-revalidate"
+            }
+        else:
+            headers = {
+                "Cache-Control": "public, max-age=31536000, immutable"
+            }
+
+        return FileResponse(file_path, headers=headers)
+
+    return JSONResponse(status_code=404, content={"error": f"Файл не найден: {path}"})
 
 def cleanup():
     """Очистка ресурсов при завершении"""
