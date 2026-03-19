@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 3.31.6)
 project(LaboratoryWork1 C)
 
 set(CMAKE_C_STANDARD 11)
@@ -55,9 +55,18 @@ add_executable(LaboratoryWork1
         src/main.c
         tests/unit_tests.c
         tests/unit_tests.h
+        ${LIB_SOURCES}
 )
 
-target_link_libraries(LaboratoryWork1 PRIVATE matrix_lib)
+target_compile_definitions(LaboratoryWork1 PRIVATE API_EXPORTS)
+
+target_include_directories(LaboratoryWork1 PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/api
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/matrix
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/types_info
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/logging
+)
 
 if(MINGW)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc")
