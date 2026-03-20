@@ -16,14 +16,20 @@ static inline void* matrix_at_ij(const Matrix* matrix, const size_t i, const siz
 
 Matrix* matrix_create(const size_t n, const FieldInfo* type) {
     if (!type) {
-        LOG_ERROR("Передаваемый тип некорректный!");
-        return NULL;
+      LOG_ERROR("Передаваемый тип некорректный!");
+      return NULL;
     }
 
     Matrix* matrix = malloc(sizeof(Matrix));
     if (!matrix) {
-        LOG_ERROR("Не удалось выделить память под структуру Matrix!");
-        return NULL;
+      LOG_ERROR("Не удалось выделить память под структуру Matrix!");
+      return NULL;
+    }
+
+    if (n == 0) {
+      LOG_ERROR("Размер матрицы должен быть больше нуля!");
+      free(matrix);
+      return NULL;
     }
 
     matrix->n = n;
@@ -31,13 +37,13 @@ Matrix* matrix_create(const size_t n, const FieldInfo* type) {
     matrix->data = calloc(n * n, type->size);
 
     if (!matrix->data) {
-        LOG_ERROR("Не удалось выделить память под данные матрицы!");
-        free(matrix);
-        return NULL;
+      LOG_ERROR("Не удалось выделить память под данные матрицы!");
+      free(matrix);
+      return NULL;
     }
 
     for (size_t i = 0; i < n * n; i++) {
-        type->zero(matrix_at_i(matrix, i));
+      type->zero(matrix_at_i(matrix, i));
     }
 
     LOG_INFO("Матрица %zux%zu успешно создана", n, n);
@@ -103,6 +109,7 @@ Matrix* matrix_multiply(const Matrix* matrix1, const Matrix* matrix2) {
     void* tmp = malloc(result->type->size);
     if (!tmp) {
         LOG_ERROR("Не удалось выделить память для промежуточного элемента умножения");
+        matrix_destroy(result);
         return NULL;
     }
 
@@ -152,15 +159,7 @@ void matrix_print(const Matrix* matrix) {
     if (matrix->n == 0) {
         LOG_INFO("Печать пустой матрицы (0x0)");
         printf("\n");
-    }
-
-    else if (matrix->n == 1) {
-        for (size_t i = 0; i < matrix->n; i++) {
-            matrix->type->print(matrix_at_i(matrix, i));
-        }
-    }
-
-    else {
+    } else {
         LOG_INFO("Печать матрицы %zux%zu", matrix->n, matrix->n);
         printf("Матрица %zux%zu:\n", matrix->n, matrix->n);
         for (size_t i = 0; i < matrix->n; i++) {
@@ -197,6 +196,7 @@ void matrix_set(Matrix* matrix, const size_t row, const size_t col, const void* 
     void* new_element = matrix->type->clone(value);
     if (!new_element) {
         LOG_ERROR("Не удалось клонировать значение при установке [%zu][%zu]", row, col);
+        return;
     }
 
     memcpy(element, new_element, matrix->type->size);
@@ -218,6 +218,11 @@ bool matrix_lu_decomposition(const Matrix* matrix, Matrix** out_L, Matrix** out_
         return false;
     }
 
+    if (matrix->n == 0) {
+        LOG_ERROR("Нельзя выполнить LU-разложение матрицы 0x0!");
+        return false;
+    }
+
     Matrix* L = matrix_create(matrix->n, matrix->type);
     Matrix* U = matrix_create(matrix->n, matrix->type);
     if (!L || !U) {
@@ -233,6 +238,8 @@ bool matrix_lu_decomposition(const Matrix* matrix, Matrix** out_L, Matrix** out_
         LOG_ERROR("Не удалось выделить временную память!");
         free(tmp);
         free(product);
+        matrix_destroy(L);
+        matrix_destroy(U);
         return false;
     }
 
@@ -242,7 +249,7 @@ bool matrix_lu_decomposition(const Matrix* matrix, Matrix** out_L, Matrix** out_
             matrix->type->zero(product);
 
             for (size_t m = 0; m < k; m++) {
-                matrix->type->mul(matrix_at_ij(L, k, m), matrix_at_ij(U, m, k), tmp);
+                matrix->type->mul(matrix_at_ij(L, k, m), matrix_at_ij(U, m, j), tmp);
                 matrix->type->sum(product, tmp, product);
             }
 

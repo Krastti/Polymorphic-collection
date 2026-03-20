@@ -1,8 +1,9 @@
 #include "field_info.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <math.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define DOUBLE_EPSILON 1e-9
 
@@ -31,10 +32,6 @@ static void d_mul(const void* a, const void* b, void* res) {
 }
 
 static void d_div(const void* a, const void* b, void* res) {
-    if (fabs(*(const double*)b) < DOUBLE_EPSILON) {
-        *(double*)res = 0.0;
-        return;
-    }
     *(double*)res = *(const double*)a / *(const double*)b;
 }
 
@@ -74,5 +71,6 @@ const FieldInfo* get_double_type_info(void) {
 
     instance->neg = d_neg;
     instance->frac = d_frac;
+
     return instance;
 }

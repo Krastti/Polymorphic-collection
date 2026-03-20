@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import asyncio
 import os
-from models import MatrixRequest, MatrixResponse
+from models import MatrixRequest, MatrixResponse, LUResponse
 from matrix_lib import matrix_lib
 from utils import parse_matrix_value, format_result_data
 from config import MatrixType, LIB_PATH
@@ -177,6 +177,55 @@ async def api_scalar_multiply(request: MatrixRequest):
             type=request.type,
             size=n,
             result=format_result_data(result_data, request.type)
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/api/lu", response_model=LUResponse, tags=["Operations"])
+async def api_lu(request: MatrixRequest):
+    ok, err = request.check_size()
+    if not ok:
+        raise HTTPException(status_code=400, detail=err)
+
+    try:
+        n = request.n
+        matrix_type = MatrixType.from_string(request.type)
+
+        m = await run_in_executor(matrix_lib.create_matrix, n, matrix_type)
+        if not m:
+            raise HTTPException(status_code=500, detail="Не удалось создать матрицу")
+
+        for i in range(n):
+            for j in range(n):
+                r, im = parse_matrix_value(request.matrixA[i * n + j], request.type)
+                await run_in_executor(matrix_lib.set_value, m, i, j, r, im)
+
+        lu = await run_in_executor(matrix_lib.lu_decomposition, m)
+        await run_in_executor(matrix_lib.destroy_matrix, m)
+
+        if lu is None:
+            raise HTTPException(
+                status_code=422,
+                detail="LU-разложение невозможно: матрица вырождена или U[k][k] = 0"
+            )
+
+        L_ptr, U_ptr = lu
+        L_data = await run_in_executor(matrix_lib.get_matrix_data, L_ptr)
+        U_data = await run_in_executor(matrix_lib.get_matrix_data, U_ptr)
+
+        await run_in_executor(matrix_lib.destroy_matrix, L_ptr)
+        await run_in_executor(matrix_lib.destroy_matrix, U_ptr)
+
+        return LUResponse(
+            success=True,
+            operation="lu",
+            type=request.type,
+            size=n,
+            L=format_result_data(L_data, request.type),
+            U=format_result_data(U_data, request.type)
         )
 
     except HTTPException:

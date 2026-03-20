@@ -14,12 +14,10 @@ def _find_lib() -> str:
       2. Стандартная CMake-директория build/lib/
       3. Список fallback-директорий (CI, локальная сборка, Docker)
     """
-    # 1. Явный путь через env — наивысший приоритет
     env_path = os.environ.get('MATRIX_LIB')
     if env_path:
         return env_path
 
-    # 2. Стандартный CMake out-of-source build
     candidates = [
         os.path.join(PROJECT_ROOT, 'build', 'lib', LIB_NAME),
         os.path.join(PROJECT_ROOT, 'build', LIB_NAME),
@@ -39,7 +37,7 @@ LIB_PATH = _find_lib()
 
 HOST = '0.0.0.0'
 PORT = 8000
-DEBUG = True
+DEBUG = False
 
 MAX_MATRIX_SIZE = 500
 

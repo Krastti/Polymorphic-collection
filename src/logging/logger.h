@@ -10,7 +10,6 @@ typedef enum {
     LOG_ERROR = 3
 } LogLevel;
 
-void logger_init(LogLevel level);
 void logger_set_level(LogLevel level);
 void logger_log(LogLevel level, const char* fmt, ...);
 

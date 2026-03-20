@@ -7,7 +7,6 @@ import logging
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from matrix_lib import matrix_lib
 import uvicorn
 
 from config import HOST, PORT, WEB_DIR, LIB_PATH
@@ -76,14 +75,6 @@ async def static_files(path: str):
         return FileResponse(file_path, headers=headers)
 
     return JSONResponse(status_code=404, content={"error": f"Файл не найден: {path}"})
-
-def cleanup():
-    """Очистка ресурсов при завершении"""
-    if matrix_lib:
-        matrix_lib.cleanup()
-
-atexit.register(cleanup)
-
 
 def open_browser():
     """Открывает браузер после запуска сервера"""

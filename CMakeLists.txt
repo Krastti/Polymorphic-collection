@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 11)
 option(BUILD_TESTS "Build unit tests" ON)
 
 if(WIN32)
-    add_definitions(-D_API_EXPORTS)
+    add_definitions(-DAPI_EXPORTS)
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
 endif()
 

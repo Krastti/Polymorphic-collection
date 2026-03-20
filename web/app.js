@@ -1,387 +1,478 @@
-// Конфигурация
-const API_BASE = '';
-let currentSize = 3;
-let currentType = 'double';
-let currentOperation = 'sum';
+/**
+ * MatrixCalc — app.js
+ * Поддерживает все API-эндпоинты:
+ *   GET  /health
+ *   POST /api/sum
+ *   POST /api/multiply
+ *   POST /api/scalar_multiply
+ *   POST /api/lu
+ */
 
-// Элементы DOM
-const elements = {
-    matrixType: document.getElementById('matrix-type'),
-    matrixSize: document.getElementById('matrix-size'),
-    sizeDisplay: document.getElementById('size-display'),
-    sizeIncrease: document.getElementById('size-increase'),
-    sizeDecrease: document.getElementById('size-decrease'),
-    operationCards: document.querySelectorAll('.op-btn'),
-    operationSymbol: document.getElementById('operation-symbol'),
-    scalarSection: document.getElementById('scalar-section'),
-    scalarValue: document.getElementById('scalar-value'),
-    matrixAGrid: document.getElementById('matrix-a-grid'),
-    matrixBGrid: document.getElementById('matrix-b-grid'),
-    matrixBHint: document.getElementById('matrix-b-hint'),
-    addMatrixB: document.getElementById('add-matrix-b'),
-    applySettings: document.getElementById('apply-settings'),
-    calculateBtn: document.getElementById('calculate-btn'),
-    resultGrid: document.getElementById('result-grid'),
-    resultInfo: document.getElementById('result-info'),
-    resultPlaceholder: document.getElementById('result-placeholder'),
-    resultOutput: document.getElementById('result-output'),
-    errorMessage: document.getElementById('error-message'),
-    statusIndicator: document.getElementById('status-indicator'),
-    statusDot: document.getElementById('status-dot'),
-    statusText: document.getElementById('status-text'),
-    loadingSpinner: document.getElementById('loading-spinner')
+'use strict';
+
+// ── Конфигурация ──────────────────────────────────────────────────────────────
+
+const API_BASE = '';
+
+const ENDPOINTS = {
+  sum:             '/api/sum',
+  multiply:        '/api/multiply',
+  scalar_multiply: '/api/scalar_multiply',
+  lu:              '/api/lu',
 };
 
-// Инициализация
+const OP_SYMBOLS = {
+  sum:             '+',
+  multiply:        '×',
+  scalar_multiply: 'λ',
+  lu:              '∇',
+};
+
+const OP_NAMES = {
+  sum:             'Сложение',
+  multiply:        'Умножение',
+  scalar_multiply: 'Умножение на скаляр',
+  lu:              'LU-разложение',
+};
+
+// ── Состояние ─────────────────────────────────────────────────────────────────
+
+let state = {
+  size:      3,
+  type:      'double',   // 'double' | 'complex'
+  operation: 'sum',
+};
+
+// ── DOM-ссылки ─────────────────────────────────────────────────────────────────
+
+const el = {
+  matrixType:     () => document.getElementById('matrix-type'),
+  matrixSize:     () => document.getElementById('matrix-size'),
+  sizeDisplay:    () => document.getElementById('size-display'),
+  sizeIncrease:   () => document.getElementById('size-increase'),
+  sizeDecrease:   () => document.getElementById('size-decrease'),
+  opBtns:         () => document.querySelectorAll('.op-btn'),
+  opSymbol:       () => document.getElementById('operation-symbol'),
+  scalarSection:  () => document.getElementById('scalar-section'),
+  scalarValue:    () => document.getElementById('scalar-value'),
+  matrixAGrid:    () => document.getElementById('matrix-a-grid'),
+  matrixBGrid:    () => document.getElementById('matrix-b-grid'),
+  matrixBPanel:   () => document.getElementById('matrix-b-panel'),
+  matrixBHint:    () => document.getElementById('matrix-b-hint'),
+  addMatrixB:     () => document.getElementById('add-matrix-b'),
+  applySettings:  () => document.getElementById('apply-settings'),
+  calculateBtn:   () => document.getElementById('calculate-btn'),
+  resultGrid:     () => document.getElementById('result-grid'),
+  resultInfo:     () => document.getElementById('result-info'),
+  resultPlaceholder: () => document.getElementById('result-placeholder'),
+  resultOutput:   () => document.getElementById('result-output'),
+  errorMessage:   () => document.getElementById('error-message'),
+  statusDot:      () => document.getElementById('status-dot'),
+  statusText:     () => document.getElementById('status-text'),
+  loadingSpinner: () => document.getElementById('loading-spinner'),
+};
+
+// ── Инициализация ─────────────────────────────────────────────────────────────
+
 document.addEventListener('DOMContentLoaded', () => {
-    checkHealth();
-    setupEventListeners();
-    applySettings();
+  setupEventListeners();
+  applySettings();
+  checkHealth();
+  setInterval(checkHealth, 60_000);
 });
 
-// Проверка здоровья API
+// ── Проверка здоровья сервера ─────────────────────────────────────────────────
+
 async function checkHealth() {
-    try {
-        const response = await fetch(`${API_BASE}/health`);
-        const data = await response.json();
+  const dot  = el.statusDot();
+  const text = el.statusText();
+  if (!dot || !text) return;
 
-        if (data.status === 'ok') {
-            elements.statusDot.className = 'status-dot connected';
-            elements.statusText.textContent = 'Сервер готов';
-        } else {
-            elements.statusDot.className = 'status-dot error';
-            elements.statusText.textContent = 'Ограниченный режим';
-        }
-    } catch (error) {
-        elements.statusDot.className = 'status-dot error';
-        elements.statusText.textContent = 'Сервер недоступен';
-        console.error('Health check failed:', error);
+  try {
+    const res  = await fetch(`${API_BASE}/health`);
+    const data = await res.json();
+
+    if (data.status === 'ok') {
+      dot.className  = 'status-dot connected';
+      text.textContent = `Сервер готов · v${data.version ?? ''}`;
+    } else {
+      dot.className  = 'status-dot error';
+      text.textContent = 'Ограниченный режим';
     }
+  } catch {
+    dot.className  = 'status-dot error';
+    text.textContent = 'Недоступен';
+  }
 }
 
-// Настройка обработчиков событий
+// ── Обработчики событий ───────────────────────────────────────────────────────
+
 function setupEventListeners() {
-    elements.applySettings.addEventListener('click', applySettings);
-    elements.calculateBtn.addEventListener('click', calculate);
-    elements.addMatrixB.addEventListener('click', () => fillRandom());
+  el.applySettings()?.addEventListener('click', applySettings);
+  el.calculateBtn()?.addEventListener('click', calculate);
 
-    elements.sizeIncrease.addEventListener('click', () => {
-        const current = parseInt(elements.matrixSize.value) || 3;
-        if (current < 10) {
-            elements.matrixSize.value = current + 1;
-            elements.sizeDisplay.textContent = current + 1;
-            applySettings();
-        }
-    });
+  // Кнопка «заполнить случайными»
+  el.addMatrixB()?.addEventListener('click', fillRandom);
 
-    elements.sizeDecrease.addEventListener('click', () => {
-        const current = parseInt(elements.matrixSize.value) || 3;
-        if (current > 1) {
-            elements.matrixSize.value = current - 1;
-            elements.sizeDisplay.textContent = current - 1;
-            applySettings();
-        }
-    });
+  // Счётчик размера (+/-)
+  el.sizeIncrease()?.addEventListener('click', () => changeSize(+1));
+  el.sizeDecrease()?.addEventListener('click', () => changeSize(-1));
 
-    elements.matrixType.addEventListener('change', () => {
-        currentType = elements.matrixType.value;
-        applySettings();
-    });
+  // Смена типа матрицы
+  el.matrixType()?.addEventListener('change', () => {
+    state.type = el.matrixType().value;
+    applySettings();
+  });
 
-    elements.operationCards.forEach(card => {
-        card.addEventListener('click', () => {
-            elements.operationCards.forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-            currentOperation = card.dataset.operation;
-            updateOperationUI();
-        });
+  // Выбор операции
+  el.opBtns().forEach(btn => {
+    btn.addEventListener('click', () => {
+      el.opBtns().forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.operation = btn.dataset.operation;
+      updateOperationUI();
     });
+  });
 }
 
-// Обновление UI в зависимости от операции
-function updateOperationUI() {
-    const symbols = {
-        'sum': '+',
-        'multiply': '×',
-        'scalar_multiply': 'λ',
-        'lu': '∇'
-    };
-
-    elements.operationSymbol.textContent = symbols[currentOperation] || '+';
-
-    if (currentOperation === 'scalar_multiply') {
-        elements.scalarSection.style.display = 'block';
-        elements.matrixBGrid.parentElement.style.opacity = '0.5';
-        elements.matrixBHint.textContent = 'не используется';
-    } else if (currentOperation === 'lu') {
-        elements.scalarSection.style.display = 'none';
-        elements.matrixBGrid.parentElement.style.opacity = '0.5';
-        elements.matrixBHint.textContent = 'не нужна для LU';
-    } else {
-        elements.scalarSection.style.display = 'none';
-        elements.matrixBGrid.parentElement.style.opacity = '1';
-        elements.matrixBHint.textContent = '';
-    }
+function changeSize(delta) {
+  const sizeEl = el.matrixSize();
+  if (!sizeEl) return;
+  const current = parseInt(sizeEl.value) || state.size;
+  const next    = Math.max(1, Math.min(10, current + delta));
+  sizeEl.value  = next;
+  const disp    = el.sizeDisplay();
+  if (disp) disp.textContent = next;
+  applySettings();
 }
 
-// Применение настроек
+// ── Применить настройки ───────────────────────────────────────────────────────
+
 function applySettings() {
-    currentSize = parseInt(elements.matrixSize.value) || 3;
-    currentType = elements.matrixType.value;
+  const sizeEl = el.matrixSize();
+  const typeEl = el.matrixType();
 
-    if (currentSize < 1) currentSize = 1;
-    if (currentSize > 10) currentSize = 10;
+  state.size = Math.max(1, Math.min(10, parseInt(sizeEl?.value) || 3));
+  state.type = typeEl?.value ?? state.type;
 
-    elements.sizeDisplay.textContent = currentSize;
+  const disp = el.sizeDisplay();
+  if (disp) disp.textContent = state.size;
 
-    createMatrixGrid(elements.matrixAGrid, currentSize, 'A');
-    createMatrixGrid(elements.matrixBGrid, currentSize, 'B');
-
-    elements.resultGrid.style.display = 'none';
-    elements.resultGrid.innerHTML = '';
-    elements.resultInfo.innerHTML = '';
-    elements.resultPlaceholder.style.display = 'block';
-    elements.resultOutput.style.borderStyle = 'dashed';
-    hideError();
-
-    updateOperationUI();
+  buildMatrixGrid(el.matrixAGrid(), state.size, 'A');
+  buildMatrixGrid(el.matrixBGrid(), state.size, 'B');
+  clearResult();
+  hideError();
+  updateOperationUI();
 }
 
-// Создание сетки матрицы
-function createMatrixGrid(container, size, label) {
-    container.innerHTML = '';
-    container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+// ── UI для текущей операции ───────────────────────────────────────────────────
 
-    for (let i = 0; i < size * size; i++) {
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'matrix-cell';
-        input.dataset.index = i;
-        input.dataset.matrix = label;
+function updateOperationUI() {
+  const symEl = el.opSymbol();
+  if (symEl) symEl.textContent = OP_SYMBOLS[state.operation] ?? '+';
 
-        if (currentType === 'complex') {
-            input.placeholder = 'a, b';
-        } else {
-            input.placeholder = '0';
-        }
+  const scalar = el.scalarSection();
+  const bPanel = el.matrixBPanel();
+  const bHint  = el.matrixBHint();
 
-        container.appendChild(input);
-    }
+  const needsB      = state.operation === 'sum' || state.operation === 'multiply';
+  const needsScalar = state.operation === 'scalar_multiply';
+
+  if (scalar) scalar.style.display = needsScalar ? 'block' : 'none';
+  if (bPanel) bPanel.style.opacity  = needsB ? '1' : '0.4';
+  if (bHint) {
+    bHint.textContent = state.operation === 'lu'
+      ? 'не нужна для LU'
+      : needsScalar ? 'не нужна'
+      : '';
+  }
 }
 
-// Получение данных матрицы из inputs
-function getMatrixData(matrixLabel) {
-    const inputs = document.querySelectorAll(`.matrix-cell[data-matrix="${matrixLabel}"]`);
-    const data = [];
+// ── Сборка сетки матрицы ──────────────────────────────────────────────────────
 
-    inputs.forEach(input => {
-        const value = input.value.trim();
-        if (currentType === 'complex') {
-            data.push(parseComplexValue(value));
-        } else {
-            data.push(parseFloat(value) || 0);
-        }
-    });
+function buildMatrixGrid(container, size, label) {
+  if (!container) return;
+  container.innerHTML = '';
+  container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
 
-    return data;
+  for (let i = 0; i < size * size; i++) {
+    const inp = document.createElement('input');
+    inp.type          = 'text';
+    inp.className     = 'matrix-cell';
+    inp.dataset.index  = i;
+    inp.dataset.matrix = label;
+    inp.placeholder   = state.type === 'complex' ? 'a, b' : '0';
+
+    // Навигация стрелками по ячейкам
+    inp.addEventListener('keydown', e => navigateCells(e, size));
+    container.appendChild(inp);
+  }
 }
 
-// Парсинг комплексного значения
-function parseComplexValue(value) {
-    if (!value) return { real: 0, imag: 0 };
+/** Перемещение между ячейками клавишами-стрелками */
+function navigateCells(e, size) {
+  const cells = [...e.target.closest('[id]').querySelectorAll('.matrix-cell')];
+  const idx   = cells.indexOf(e.target);
+  if (idx === -1) return;
 
-    // Формат: {real, imag}
-    if (value.includes('{') || value.includes('real')) {
-        try {
-            const obj = JSON.parse(value.replace(/'/g, '"'));
-            return {
-                real: parseFloat(obj.real) || 0,
-                imag: parseFloat(obj.imag) || 0
-            };
-        } catch {
-            return { real: 0, imag: 0 };
-        }
-    }
+  const moves = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: size, ArrowUp: -size };
+  const delta = moves[e.key];
+  if (delta === undefined) return;
 
-    // Формат: real, imag
-    const parts = value.split(',').map(v => parseFloat(v.trim()) || 0);
-    return {
-        real: parts[0] || 0,
-        imag: parts[1] || 0
-    };
+  e.preventDefault();
+  const next = cells[idx + delta];
+  if (next) next.focus();
 }
 
-// Заполнение случайными значениями
-function fillRandom() {
-    const inputs = document.querySelectorAll('.matrix-cell');
-    inputs.forEach(input => {
-        if (currentType === 'complex') {
-            const real = (Math.random() * 10 - 5).toFixed(2);
-            const imag = (Math.random() * 10 - 5).toFixed(2);
-            input.value = `${real}, ${imag}`;
-        } else {
-            input.value = (Math.random() * 10 - 5).toFixed(2);
-        }
+// ── Сбор данных из сетки ──────────────────────────────────────────────────────
+
+function getMatrixData(label) {
+  return [...document.querySelectorAll(`.matrix-cell[data-matrix="${label}"]`)]
+    .map(inp => {
+      const raw = inp.value.trim();
+      return state.type === 'complex'
+        ? parseComplexInput(raw)
+        : (parseFloat(raw) || 0);
     });
 }
 
-// Выполнение вычислений
-async function calculate() {
-    const matrixA = getMatrixData('A');
-    const matrixB = currentOperation !== 'scalar_multiply' && currentOperation !== 'lu' ? getMatrixData('B') : null;
-    const scalar = currentOperation === 'scalar_multiply' ? elements.scalarValue.value : null;
+/**
+ * Форматы ввода комплексного числа:
+ *   "3, -2"          → { real: 3,  imag: -2 }
+ *   "3"              → { real: 3,  imag: 0  }
+ *   '{"real":3,"imag":-2}'  → { real: 3,  imag: -2 }
+ */
+function parseComplexInput(v) {
+  if (!v) return { real: 0, imag: 0 };
 
-    // Валидация
-    if (currentOperation !== 'scalar_multiply' && currentOperation !== 'lu' && !matrixB) {
-        showError('Матрица B обязательна для этой операции');
-        return;
-    }
-
-    if (currentOperation === 'scalar_multiply' && !scalar) {
-        showError('Скаляр обязателен для этой операции');
-        return;
-    }
-
-    // Подготовка запроса
-    const requestData = {
-        type: currentType,
-        n: currentSize,
-        matrixA: matrixA
-    };
-
-    if (matrixB) {
-        requestData.matrixB = matrixB;
-    }
-
-    if (scalar) {
-        requestData.scalar = parseComplexValue(scalar);
-    }
-
-    // Определение endpoint
-    let endpoint = '';
-    switch (currentOperation) {
-        case 'sum':
-            endpoint = '/api/sum';
-            break;
-        case 'multiply':
-            endpoint = '/api/multiply';
-            break;
-        case 'scalar_multiply':
-            endpoint = '/api/scalar_multiply';
-            break;
-        case 'lu':
-            endpoint = '/api/lu';
-            break;
-    }
-
+  // JSON-объект
+  if (v.startsWith('{')) {
     try {
-        setLoading(true);
-        hideError();
+      const o = JSON.parse(v.replace(/'/g, '"'));
+      return { real: parseFloat(o.real) || 0, imag: parseFloat(o.imag) || 0 };
+    } catch { /* fallthrough */ }
+  }
 
-        const response = await fetch(`${API_BASE}${endpoint}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestData)
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.detail || 'Ошибка вычисления');
-        }
-
-        if (result.success) {
-            displayResult(result);
-        } else {
-            showError(result.error || 'Неизвестная ошибка');
-        }
-
-    } catch (error) {
-        showError(error.message);
-        console.error('Calculation error:', error);
-    } finally {
-        setLoading(false);
-    }
+  // "a, b" или просто "a"
+  const parts = v.split(',').map(x => parseFloat(x.trim()));
+  return { real: parts[0] || 0, imag: parts[1] || 0 };
 }
 
-// Отображение результата
-function displayResult(result) {
-    elements.resultPlaceholder.style.display = 'none';
-    elements.resultGrid.style.display = 'grid';
-    elements.resultOutput.style.borderStyle = 'solid';
+// ── Заполнить случайными числами ──────────────────────────────────────────────
 
-    elements.resultInfo.innerHTML = `
-        <div class="result-info-item">
-            <strong>Операция:</strong> ${getOperationName(result.operation)}
-        </div>
-        <div class="result-info-item">
-            <strong>Тип:</strong> ${result.type}
-        </div>
-        <div class="result-info-item">
-            <strong>Размер:</strong> ${result.size} × ${result.size}
-        </div>
-    `;
-
-    // Создание сетки результата
-    elements.resultGrid.innerHTML = '';
-    elements.resultGrid.style.gridTemplateColumns = `repeat(${result.size}, 1fr)`;
-
-    result.result.forEach(value => {
-        const cell = document.createElement('div');
-        cell.className = 'matrix-cell result-cell';
-
-        if (result.type === 'complex') {
-            cell.textContent = `${value.real.toFixed(4)}${value.imag >= 0 ? '+' : ''}${value.imag.toFixed(4)}i`;
-        } else {
-            cell.textContent = typeof value === 'number' ? value.toFixed(4) : value;
-        }
-
-        elements.resultGrid.appendChild(cell);
-    });
-}
-
-// Получение названия операции
-function getOperationName(operation) {
-    const names = {
-        'sum': 'Сложение',
-        'multiply': 'Умножение',
-        'scalar_multiply': 'Умножение на скаляр',
-        'lu': 'LU-разложение'
-    };
-    return names[operation] || operation;
-}
-
-// Показать ошибку
-function showError(message) {
-    elements.errorMessage.textContent = message;
-    elements.errorMessage.classList.add('show');
-    setTimeout(() => {
-        hideError();
-    }, 5000);
-}
-
-// Скрыть ошибку
-function hideError() {
-    elements.errorMessage.classList.remove('show');
-}
-
-// Установка состояния загрузки
-function setLoading(loading) {
-    elements.calculateBtn.disabled = loading;
-    elements.applySettings.disabled = loading;
-
-    if (loading) {
-        elements.calculateBtn.classList.add('loading');
-        elements.loadingSpinner.style.display = 'block';
+function fillRandom() {
+  document.querySelectorAll('.matrix-cell').forEach(inp => {
+    if (state.type === 'complex') {
+      const r = rnd(), i = rnd();
+      inp.value = `${r}, ${i}`;
     } else {
-        elements.calculateBtn.classList.remove('loading');
-        elements.loadingSpinner.style.display = 'none';
+      inp.value = rnd();
     }
+  });
 }
 
-// Периодическая проверка здоровья
-setInterval(() => {
-    checkHealth();
-}, 60000);
+function rnd() { return (Math.random() * 10 - 5).toFixed(2); }
+
+// ── Основной расчёт ───────────────────────────────────────────────────────────
+
+async function calculate() {
+  hideError();
+
+  // Валидация скаляра
+  if (state.operation === 'scalar_multiply') {
+    const sv = el.scalarValue()?.value?.trim();
+    if (!sv) { showError('Введите значение скаляра'); return; }
+  }
+
+  const body = buildRequestBody();
+
+  setLoading(true);
+  try {
+    const url = `${API_BASE}${ENDPOINTS[state.operation]}`;
+    const res = await fetch(url, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.detail ?? `HTTP ${res.status}`);
+    }
+
+    if (data.success) {
+      displayResult(data);
+    } else {
+      showError(data.error ?? 'Неизвестная ошибка');
+    }
+  } catch (err) {
+    showError(err.message ?? String(err));
+  } finally {
+    setLoading(false);
+  }
+}
+
+/** Формирует тело POST-запроса согласно MatrixRequest */
+function buildRequestBody() {
+  const body = {
+    type:    state.type,
+    n:       state.size,
+    matrixA: getMatrixData('A'),
+  };
+
+  const op = state.operation;
+
+  if (op === 'sum' || op === 'multiply') {
+    body.matrixB = getMatrixData('B');
+  }
+
+  if (op === 'scalar_multiply') {
+    const sv = el.scalarValue()?.value?.trim() ?? '0';
+    body.scalar = state.type === 'complex'
+      ? parseComplexInput(sv)
+      : (parseFloat(sv) || 0);
+  }
+
+  return body;
+}
+
+// ── Отображение результата ────────────────────────────────────────────────────
+
+function displayResult(result) {
+  clearResult();
+
+  const placeholder = el.resultPlaceholder();
+  const grid        = el.resultGrid();
+  const info        = el.resultInfo();
+  const output      = el.resultOutput();
+
+  if (placeholder) placeholder.style.display = 'none';
+  if (output) output.classList.add('has-result');
+
+  // Мета-информация
+  if (info) {
+    info.innerHTML = `
+      <div class="meta-item"><b>Операция</b> ${OP_NAMES[result.operation] ?? result.operation}</div>
+      <div class="meta-item"><b>Тип</b> ${result.type}</div>
+      <div class="meta-item"><b>Размер</b> ${result.size}×${result.size}</div>`;
+  }
+
+  if (result.operation === 'lu') {
+    renderLUResult(result);
+  } else {
+    renderMatrixResult(grid, result.result, result.size, result.type);
+  }
+}
+
+/** Рендерит обычную матрицу результата */
+function renderMatrixResult(container, flatData, size, type) {
+  if (!container) return;
+  container.style.display               = 'grid';
+  container.style.gridTemplateColumns   = `repeat(${size}, 1fr)`;
+  container.innerHTML = '';
+
+  flatData.forEach(v => {
+    const cell = document.createElement('div');
+    cell.className   = 'matrix-cell result-cell';
+    cell.textContent = formatCellValue(v, type);
+    container.appendChild(cell);
+  });
+}
+
+/**
+ * LU-разложение: результат содержит два поля — L и U.
+ * Создаём два субблока внутри result-grid.
+ */
+function renderLUResult(result) {
+  const grid = el.resultGrid();
+  if (!grid) return;
+
+  grid.style.display             = 'block';
+  grid.style.gridTemplateColumns = '';
+  grid.innerHTML = '';
+
+  [['L', result.L], ['U', result.U]].forEach(([name, data]) => {
+    const wrapper = document.createElement('div');
+    wrapper.style.marginBottom = '16px';
+
+    const label = document.createElement('div');
+    label.textContent = `Матрица ${name}`;
+    label.style.cssText = `
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 8px; font-family: var(--mono, monospace);`;
+    wrapper.appendChild(label);
+
+    const subGrid = document.createElement('div');
+    subGrid.style.display               = 'grid';
+    subGrid.style.gridTemplateColumns   = `repeat(${result.size}, 1fr)`;
+    subGrid.style.gap                   = '6px';
+
+    data.forEach(v => {
+      const cell = document.createElement('div');
+      cell.className   = 'matrix-cell result-cell';
+      cell.textContent = formatCellValue(v, result.type);
+      subGrid.appendChild(cell);
+    });
+
+    wrapper.appendChild(subGrid);
+    grid.appendChild(wrapper);
+  });
+}
+
+/** Форматирует значение ячейки: комплексное или вещественное */
+function formatCellValue(v, type) {
+  if (type === 'complex' && v && typeof v === 'object') {
+    const r = fmtNum(v.real, 3);
+    const i = fmtNum(v.imag, 3);
+    return `${r}${v.imag >= 0 ? '+' : ''}${i}i`;
+  }
+  return fmtNum(v, 4);
+}
+
+function fmtNum(n, decimals = 4) {
+  const num = typeof n === 'number' ? n : parseFloat(n);
+  if (isNaN(num)) return '—';
+  // Убираем лишние нули: 3.0000 → 3, 1.5000 → 1.5
+  return parseFloat(num.toFixed(decimals)).toString();
+}
+
+// ── Вспомогательные UI-функции ────────────────────────────────────────────────
+
+function clearResult() {
+  const grid = el.resultGrid();
+  const info = el.resultInfo();
+  const ph   = el.resultPlaceholder();
+  const out  = el.resultOutput();
+
+  if (grid) { grid.innerHTML = ''; grid.style.display = 'none'; }
+  if (info) info.innerHTML = '';
+  if (ph)   ph.style.display = 'block';
+  if (out)  out.classList.remove('has-result');
+}
+
+let _errorTimer = null;
+
+function showError(msg) {
+  const errEl = el.errorMessage();
+  if (!errEl) return;
+  errEl.textContent = msg;
+  errEl.classList.add('show');
+  clearTimeout(_errorTimer);
+  _errorTimer = setTimeout(hideError, 6000);
+}
+
+function hideError() {
+  el.errorMessage()?.classList.remove('show');
+}
+
+function setLoading(on) {
+  const btn     = el.calculateBtn();
+  const applyEl = el.applySettings();
+  const spinner = el.loadingSpinner();
+
+  if (btn)     btn.disabled     = on;
+  if (applyEl) applyEl.disabled = on;
+  if (spinner) spinner.classList.toggle('show', on);
+}

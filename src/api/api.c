@@ -37,21 +37,6 @@ API_EXPORT void* api_matrix_multiply(void* matrix1, void* matrix2) {
   return matrix_multiply((Matrix*)matrix1, (Matrix*)matrix2);
 }
 
-API_EXPORT void api_matrix_set(void* matrix, size_t row, size_t col, double real, double imag) {
-  Matrix* m = (Matrix*)matrix;
-  if (!m || row >= m->n || col >= m->n) return;
-
-  if (m->type == get_double_type_info()) {
-    matrix_set(m, row, col, &real);
-  }
-  else if (m->type == get_complex_type_info()) {
-    Complex c;
-    c.real = real;
-    c.imag = imag;
-    matrix_set(m, row, col, &c);
-  }
-}
-
 API_EXPORT void* api_matrix_multiply_by_scalar(void* matrix, double scalar_real, double scalar_imag){
   if (!matrix) return NULL;
   Matrix* m = (Matrix*)matrix;
@@ -76,17 +61,44 @@ API_EXPORT void* api_matrix_multiply_by_scalar(void* matrix, double scalar_real,
   return result;
 }
 
+API_EXPORT int api_matrix_lu_decomposition(void* matrix, void** matrixL, void** matrixU) {
+  if (!matrix || !matrixL || !matrixU) return 0;
+
+  Matrix* L = NULL;
+  Matrix* U = NULL;
+
+  bool ok = matrix_lu_decomposition((Matrix*)matrix, &L, &U);
+  if (!ok) return 0;
+
+  *matrixL = L;
+  *matrixU = U;
+  return 1;
+}
+
+API_EXPORT void api_matrix_set(void* matrix, size_t row, size_t col, double real, double imag) {
+  Matrix* m = (Matrix*)matrix;
+  if (!m || row >= m->n || col >= m->n) return;
+
+  if (m->type == get_double_type_info()) {
+    matrix_set(m, row, col, &real);
+  }
+  else if (m->type == get_complex_type_info()) {
+    Complex c;
+    c.real = real;
+    c.imag = imag;
+    matrix_set(m, row, col, &c);
+  }
+}
+
 API_EXPORT void api_matrix_get(void* matrix, size_t row, size_t col, double* real, double* imag) {
   Matrix* m = (Matrix*)matrix;
 
-  // Инициализируем выходные значения нулями
   if (real) *real = 0.0;
   if (imag) *imag = 0.0;
 
   if (!m || row >= m->n || col >= m->n) return;
   if (!real || !imag) return;
 
-  // Проверяем тип матрицы
   if (m->type == get_double_type_info()) {
     double* val = (double*)matrix_get(m, row, col);
     if (val) *real = *val;

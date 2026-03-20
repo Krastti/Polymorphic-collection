@@ -59,7 +59,7 @@ static void c_div(const void* a, const void* b, void* res) {
     Complex* r = (Complex*)res;
     double denom = c2->real * c2->real + c2->imag * c2->imag;
 
-    if (denom < COMPLEX_EPSILON) {
+    if (denom < COMPLEX_EPSILON * COMPLEX_EPSILON) {
         r->real = 0.0;
         r->imag = 0.0;
         return;
@@ -93,7 +93,7 @@ static void c_frac(const void* elem, void* res) {
     Complex* r = (Complex*)res;
     double denom = c->real * c->real + c->imag * c->imag;
 
-    if (denom < COMPLEX_EPSILON) {
+    if (denom < COMPLEX_EPSILON * COMPLEX_EPSILON) {
       r->real = 0.0;
       r->imag = 0.0;
       return;

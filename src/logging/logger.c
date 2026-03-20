@@ -13,12 +13,12 @@ static const char *LEVEL_COLORS[] = {
 static const char *COLOR_RESET = "\033[0m";
 
 static const char *LEVEL_NAMES[] = {
-    "DEBUG", "INFO", "WARN", "ERROR"
+    "DEBUG",
+    "INFO",
+    "WARN",
+    "ERROR"
 };
 
-void logger_init(LogLevel level) {
-  current_level = level;
-}
 
 void logger_set_level(LogLevel level) {
   current_level = level;

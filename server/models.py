@@ -24,3 +24,12 @@ class MatrixResponse(BaseModel):
     size: Optional[int] = None
     result: Optional[List[Any]] = None
     error: Optional[str] = None
+
+class LUResponse(BaseModel):
+    success: bool
+    operation: Optional[str] = None
+    type: Optional[str] = None
+    size: Optional[int] = None
+    L: Optional[List[Any]] = None
+    U: Optional[List[Any]] = None
+    error: Optional[str] = None

@@ -31,6 +31,7 @@ API_EXPORT void api_destroy_matrix(void* matrix);
 API_EXPORT void* api_matrix_sum(void* matrix1, void* matrix2);
 API_EXPORT void* api_matrix_multiply(void* matrix1, void* matrix2);
 API_EXPORT void* api_matrix_multiply_by_scalar(void* matrix, double scalar_real, double scalar_imag);
+API_EXPORT int api_matrix_lu_decomposition(void* matrix, void** matrixL, void** matrixU);
 
 API_EXPORT void api_matrix_set(void* matrix, size_t row, size_t col, double real, double imag);
 API_EXPORT void api_matrix_get(void* matrix, size_t row, size_t col, double*real, double*imag);
