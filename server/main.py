@@ -1,7 +1,6 @@
 import os
 import threading
 import webbrowser
-import atexit
 import logging
 
 from fastapi import FastAPI
@@ -33,7 +32,6 @@ app.include_router(router)
 
 @app.get("/", tags=["Web"])
 async def index():
-    """Главная страница"""
     index_path = os.path.join(WEB_DIR, 'index.html')
     if os.path.exists(index_path):
         logger.info(f"Serving index.html: {index_path}")
@@ -53,7 +51,6 @@ async def index():
 
 @app.get("/{path:path}")
 async def static_files(path: str):
-    """Обслуживание статики с контролем кэша"""
     file_path = os.path.join(WEB_DIR, path)
 
     if os.path.exists(file_path) and os.path.isfile(file_path):
@@ -77,13 +74,12 @@ async def static_files(path: str):
     return JSONResponse(status_code=404, content={"error": f"Файл не найден: {path}"})
 
 def open_browser():
-    """Открывает браузер после запуска сервера"""
     webbrowser.open(f'http://localhost:{PORT}')
 
 
 if __name__ == '__main__':
     print('=' * 60)
-    print('  Matrix Calculator Web Service (FastAPI)')
+    print('  Веб-сервис для операций с матрицами')
     print(f'  Библиотека         : {LIB_PATH}')
     print(f'  Файл найден        : {os.path.isfile(LIB_PATH)}')
     print(f'  Папка web/         : {WEB_DIR}')

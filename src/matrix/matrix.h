@@ -1,5 +1,6 @@
 #ifndef LABORATORYWORK1_DOUBLE_MATRIX_H
 #define LABORATORYWORK1_DOUBLE_MATRIX_H
+
 #include <stdbool.h>
 #include "types_info/field_info.h"
 
@@ -21,4 +22,5 @@ void matrix_set(Matrix* matrix, size_t row, size_t col, const void* value);
 void* matrix_get(const Matrix* matrix, size_t row, size_t col);
 
 bool matrix_lu_decomposition(const Matrix* matrix, Matrix** out_L, Matrix** out_U);
+
 #endif //LABORATORYWORK1_DOUBLE_MATRIX_H
