@@ -1,16 +1,4 @@
-/**
- * MatrixCalc — app.js
- * Поддерживает все API-эндпоинты:
- *   GET  /health
- *   POST /api/sum
- *   POST /api/multiply
- *   POST /api/scalar_multiply
- *   POST /api/lu
- */
-
 'use strict';
-
-// ── Конфигурация ──────────────────────────────────────────────────────────────
 
 const API_BASE = '';
 
@@ -35,15 +23,11 @@ const OP_NAMES = {
   lu:              'LU-разложение',
 };
 
-// ── Состояние ─────────────────────────────────────────────────────────────────
-
 let state = {
-  size:      3,
-  type:      'double',   // 'double' | 'complex'
+  size:      2,
+  type:      'double',
   operation: 'sum',
 };
-
-// ── DOM-ссылки ─────────────────────────────────────────────────────────────────
 
 const el = {
   matrixType:     () => document.getElementById('matrix-type'),
@@ -72,16 +56,12 @@ const el = {
   loadingSpinner: () => document.getElementById('loading-spinner'),
 };
 
-// ── Инициализация ─────────────────────────────────────────────────────────────
-
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   applySettings();
   checkHealth();
   setInterval(checkHealth, 60_000);
 });
-
-// ── Проверка здоровья сервера ─────────────────────────────────────────────────
 
 async function checkHealth() {
   const dot  = el.statusDot();
@@ -105,14 +85,9 @@ async function checkHealth() {
   }
 }
 
-// ── Обработчики событий ───────────────────────────────────────────────────────
-
 function setupEventListeners() {
   el.applySettings()?.addEventListener('click', applySettings);
   el.calculateBtn()?.addEventListener('click', calculate);
-
-  // Кнопка «заполнить случайными»
-  el.addMatrixB()?.addEventListener('click', fillRandom);
 
   // Счётчик размера (+/-)
   el.sizeIncrease()?.addEventListener('click', () => changeSize(+1));
@@ -146,8 +121,6 @@ function changeSize(delta) {
   applySettings();
 }
 
-// ── Применить настройки ───────────────────────────────────────────────────────
-
 function applySettings() {
   const sizeEl = el.matrixSize();
   const typeEl = el.matrixType();
@@ -164,8 +137,6 @@ function applySettings() {
   hideError();
   updateOperationUI();
 }
-
-// ── UI для текущей операции ───────────────────────────────────────────────────
 
 function updateOperationUI() {
   const symEl = el.opSymbol();
@@ -188,8 +159,6 @@ function updateOperationUI() {
   }
 }
 
-// ── Сборка сетки матрицы ──────────────────────────────────────────────────────
-
 function buildMatrixGrid(container, size, label) {
   if (!container) return;
   container.innerHTML = '';
@@ -209,7 +178,6 @@ function buildMatrixGrid(container, size, label) {
   }
 }
 
-/** Перемещение между ячейками клавишами-стрелками */
 function navigateCells(e, size) {
   const cells = [...e.target.closest('[id]').querySelectorAll('.matrix-cell')];
   const idx   = cells.indexOf(e.target);
@@ -224,8 +192,6 @@ function navigateCells(e, size) {
   if (next) next.focus();
 }
 
-// ── Сбор данных из сетки ──────────────────────────────────────────────────────
-
 function getMatrixData(label) {
   return [...document.querySelectorAll(`.matrix-cell[data-matrix="${label}"]`)]
     .map(inp => {
@@ -236,12 +202,6 @@ function getMatrixData(label) {
     });
 }
 
-/**
- * Форматы ввода комплексного числа:
- *   "3, -2"          → { real: 3,  imag: -2 }
- *   "3"              → { real: 3,  imag: 0  }
- *   '{"real":3,"imag":-2}'  → { real: 3,  imag: -2 }
- */
 function parseComplexInput(v) {
   if (!v) return { real: 0, imag: 0 };
 
@@ -258,22 +218,7 @@ function parseComplexInput(v) {
   return { real: parts[0] || 0, imag: parts[1] || 0 };
 }
 
-// ── Заполнить случайными числами ──────────────────────────────────────────────
-
-function fillRandom() {
-  document.querySelectorAll('.matrix-cell').forEach(inp => {
-    if (state.type === 'complex') {
-      const r = rnd(), i = rnd();
-      inp.value = `${r}, ${i}`;
-    } else {
-      inp.value = rnd();
-    }
-  });
-}
-
 function rnd() { return (Math.random() * 10 - 5).toFixed(2); }
-
-// ── Основной расчёт ───────────────────────────────────────────────────────────
 
 async function calculate() {
   hideError();
@@ -337,8 +282,6 @@ function buildRequestBody() {
   return body;
 }
 
-// ── Отображение результата ────────────────────────────────────────────────────
-
 function displayResult(result) {
   clearResult();
 
@@ -365,7 +308,6 @@ function displayResult(result) {
   }
 }
 
-/** Рендерит обычную матрицу результата */
 function renderMatrixResult(container, flatData, size, type) {
   if (!container) return;
   container.style.display               = 'grid';
@@ -380,10 +322,6 @@ function renderMatrixResult(container, flatData, size, type) {
   });
 }
 
-/**
- * LU-разложение: результат содержит два поля — L и U.
- * Создаём два субблока внутри result-grid.
- */
 function renderLUResult(result) {
   const grid = el.resultGrid();
   if (!grid) return;
@@ -421,7 +359,6 @@ function renderLUResult(result) {
   });
 }
 
-/** Форматирует значение ячейки: комплексное или вещественное */
 function formatCellValue(v, type) {
   if (type === 'complex' && v && typeof v === 'object') {
     const r = fmtNum(v.real, 3);
@@ -437,8 +374,6 @@ function fmtNum(n, decimals = 4) {
   // Убираем лишние нули: 3.0000 → 3, 1.5000 → 1.5
   return parseFloat(num.toFixed(decimals)).toString();
 }
-
-// ── Вспомогательные UI-функции ────────────────────────────────────────────────
 
 function clearResult() {
   const grid = el.resultGrid();
